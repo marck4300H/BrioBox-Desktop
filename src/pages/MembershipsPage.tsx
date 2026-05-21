@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { membershipApi, type Membership } from '../api/membership.api';
+import { membershipApi, type Membership, type MembershipPlan } from '../api/membership.api';
 import { userApi, type Client } from '../api/user.api';
 
 const menuItems = [
@@ -39,14 +39,13 @@ export default function MembershipsPage() {
   const [active, setActive] = useState('Membresías');
   const [loggingOut, setLoggingOut] = useState(false);
 
-  // Lista
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'todas' | 'activa' | 'pendiente' | 'cancelada'>('todas');
 
-  // Modal nueva membresía
   const [showModal, setShowModal] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
+  const [plans, setPlans] = useState<MembershipPlan[]>([]);
   const [form, setForm] = useState({ customerId: '', planId: '' });
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
@@ -77,11 +76,21 @@ export default function MembershipsPage() {
     }
   };
 
+  const fetchPlans = async () => {
+    try {
+      const res = await membershipApi.getActivePlans();
+      setPlans(res.plans);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const openModal = () => {
     setForm({ customerId: '', planId: '' });
     setFormError('');
     setFormSuccess(false);
     fetchClients();
+    fetchPlans();
     setShowModal(true);
   };
 
@@ -114,10 +123,7 @@ export default function MembershipsPage() {
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
 
-  const daysLeft = (end: string) => {
-    const diff = Math.ceil((new Date(end).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    return diff;
-  };
+  const daysLeft = (end: string) => Math.ceil((new Date(end).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
   if (loggingOut) return (
     <div className="min-h-screen bg-[#020202] flex items-center justify-center relative overflow-hidden">
@@ -191,7 +197,7 @@ export default function MembershipsPage() {
         {/* Contenido */}
         <div className="flex-1 p-8 flex flex-col gap-6">
 
-          {/* Stats rápidas */}
+          {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             {[
               { label: 'Total', value: memberships.length, icon: '🎫', color: dark ? 'text-white' : 'text-black' },
@@ -305,7 +311,8 @@ export default function MembershipsPage() {
                     <h2 className={`font-bold tracking-wide ${dark ? 'text-white' : 'text-black'}`}>Nueva Membresía</h2>
                     <p className={`text-[10px] tracking-widest uppercase mt-0.5 ${dark ? 'text-white/30' : 'text-black/40'}`}>Asignar plan a cliente</p>
                   </div>
-                  <button onClick={() => setShowModal(false)} className={`text-xs w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${dark ? 'text-white/30 hover:text-white/60 hover:bg-white/5' : 'text-black/30 hover:text-black/60 hover:bg-black/5'}`}>✕</button>
+                  <button onClick={() => setShowModal(false)}
+                    className={`text-xs w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${dark ? 'text-white/30 hover:text-white/60 hover:bg-white/5' : 'text-black/30 hover:text-black/60 hover:bg-black/5'}`}>✕</button>
                 </div>
 
                 <div className={`w-full h-px ${dark ? 'bg-white/5' : 'bg-black/10'}`} />
@@ -327,17 +334,24 @@ export default function MembershipsPage() {
                   </select>
                 </div>
 
-                {/* Plan ID — temporal hasta que haya endpoint de planes */}
+                {/* Plan */}
                 <div className="flex flex-col gap-1.5">
-                  <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/40'}`}>ID del Plan</label>
-                  <input
-                    type="text"
+                  <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/40'}`}>Plan</label>
+                  <select
                     value={form.planId}
                     onChange={e => { setForm(prev => ({ ...prev, planId: e.target.value })); setFormError(''); }}
-                    placeholder="UUID del plan..."
-                    className={`rounded-lg px-4 py-2.5 text-sm outline-none border transition-colors ${dark ? 'bg-[#0f0f0f] border-white/5 text-white placeholder-white/20 focus:border-red-900/60' : 'bg-gray-50 border-black/10 text-black focus:border-red-300'}`}
-                  />
-                  <p className={`text-[10px] ${dark ? 'text-white/20' : 'text-black/30'}`}>Temporal — pronto se podrá seleccionar el plan desde una lista.</p>
+                    className={`rounded-lg px-4 py-2.5 text-sm outline-none border transition-colors ${dark ? 'bg-[#0f0f0f] border-white/5 text-white focus:border-red-900/60' : 'bg-gray-50 border-black/10 text-black focus:border-red-300'}`}
+                  >
+                    <option value="">Selecciona un plan...</option>
+                    {plans.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} — {p.duration_days} días — ${p.price.toLocaleString('es-CO')}
+                      </option>
+                    ))}
+                  </select>
+                  {plans.length === 0 && (
+                    <p className={`text-[10px] ${dark ? 'text-white/20' : 'text-black/30'}`}>No hay planes activos disponibles.</p>
+                  )}
                 </div>
 
                 {formError && (
