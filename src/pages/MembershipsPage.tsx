@@ -263,8 +263,8 @@ export default function MembershipsPage() {
                         ? `border-white/5 ${i % 2 === 0 ? 'bg-[#0f0f0f]' : 'bg-[#111]'} hover:bg-white/[0.02]`
                         : `border-black/5 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100`
                     }`}>
-                    <span className={`text-xs font-mono truncate ${dark ? 'text-white/50' : 'text-black/50'}`}>{m.customer_id.slice(0, 8)}...</span>
-                    <span className={`text-xs font-mono truncate ${dark ? 'text-white/50' : 'text-black/50'}`}>{m.plan_id.slice(0, 8)}...</span>
+                 <span className={`text-xs font-mono truncate ${dark ? 'text-white/50' : 'text-black/50'}`}>{String(m.customer_id).slice(0, 8)}...</span>
+                 <span className={`text-xs font-mono truncate ${dark ? 'text-white/50' : 'text-black/50'}`}>{String(m.plan_id).slice(0, 8)}...</span>
                     <span className={`text-xs ${dark ? 'text-white/40' : 'text-black/40'}`}>{formatDate(m.start_date)}</span>
                     <div className="flex flex-col gap-0.5">
                       <span className={`text-xs ${dark ? 'text-white/40' : 'text-black/40'}`}>{formatDate(m.end_date)}</span>
