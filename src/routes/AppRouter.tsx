@@ -10,6 +10,11 @@ import LandingPage from '../pages/LandingPage';
 import RegisterClientPage from '../pages/RegisterClientPage';
 import ClientsPage from '../pages/ClientsPage';
 import MembershipsPage from '../pages/MembershipsPage';
+import ProductsPage from '../pages/ProductsPage';
+import RegisterProductPage from '../pages/RegisterProductPage';
+import CashRegisterPage from '../pages/CashRegisterPage';
+import SuppliersPage from '../pages/SuppliersPage';
+import RegisterSupplierPage from '../pages/RegisterSupplierPage';
 
 export function AppRouter() {
   return (
@@ -29,6 +34,11 @@ export function AppRouter() {
           <Route path="/register-client" element={<RegisterClientPage />} />
           <Route path="/clients" element={<ClientsPage />} />
           <Route path="/memberships" element={<MembershipsPage />} />
+          <Route path="/products" element={<ProductsPage />} />
+          <Route path="/register-product" element={<RegisterProductPage />} />
+          <Route path="/cash" element={<CashRegisterPage />} />
+          <Route path="/suppliers" element={<SuppliersPage />} />
+          <Route path="/register-supplier" element={<RegisterSupplierPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />

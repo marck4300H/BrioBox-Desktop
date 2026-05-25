@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { membershipApi, type Membership, type MembershipPlan } from '../api/membership.api';
 import { userApi, type Client } from '../api/user.api';
+import { useTheme } from '../context/ThemeContext';
 
 const menuItems = [
   { label: 'Clientes', icon: '👤', path: '/clients' },
@@ -35,7 +36,8 @@ const STATUS_STYLES = {
 export default function MembershipsPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [dark, setDark] = useState(true);
+  const { darkMode, toggleTheme } = useTheme();
+  const dark = darkMode;
   const [active, setActive] = useState('Membresías');
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -180,7 +182,7 @@ export default function MembershipsPage() {
             <h1 className={`text-2xl font-bold tracking-wide ${dark ? 'text-white' : 'text-[#111]'}`}>Membresías</h1>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={() => setDark(!dark)}
+            <button onClick={toggleTheme}
               className={`w-12 h-6 rounded-full relative transition-all duration-300 ${dark ? 'bg-red-900/60' : 'bg-black/20'}`}>
               <div className={`absolute top-1 w-4 h-4 rounded-full transition-all duration-300 flex items-center justify-center text-[8px] ${dark ? 'left-7 bg-red-500' : 'left-1 bg-white'}`}>
                 {dark ? '🌙' : '☀️'}

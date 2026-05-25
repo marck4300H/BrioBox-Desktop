@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { userApi, type Client } from '../api/user.api';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../context/ThemeContext';
 
 const menuItems = [
   { label: 'Clientes', icon: '👤', path: '/clients' },
@@ -16,7 +17,7 @@ const menuItems = [
 export default function ClientsPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [darkMode, setDarkMode] = useState(true);
+  const { darkMode, toggleTheme } = useTheme();
   const [active, setActive] = useState('Clientes');
   const [loggingOut, setLoggingOut] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
@@ -170,7 +171,7 @@ export default function ClientsPage() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setDarkMode(!dark)}
+              onClick={toggleTheme}
               className={`w-12 h-6 rounded-full relative transition-all duration-300 ${dark ? 'bg-red-900/60' : 'bg-black/20'}`}
             >
               <div className={`absolute top-1 w-4 h-4 rounded-full transition-all duration-300 flex items-center justify-center text-[8px] ${dark ? 'left-7 bg-red-500' : 'left-1 bg-white'}`}>
