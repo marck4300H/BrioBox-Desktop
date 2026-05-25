@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function ProfilePanel({ dark, onClose }: Props) {
-  const { user, refreshUser, logout } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     name: user?.name ?? '',
