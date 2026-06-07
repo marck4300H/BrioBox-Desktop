@@ -1,17 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { productApi } from '../api/product.api';
+import { productApi, type Product } from '../api/product.api';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
-
-const CATEGORIES = [
-  'Suplementos',
-  'Ropa deportiva',
-  'Accesorios',
-  'Equipos',
-  'Bebidas',
-  'Otros',
-];
 
 const menuItems = [
   { label: 'Clientes', icon: '👤', path: '/clients' },
@@ -23,25 +14,25 @@ const menuItems = [
   { label: 'Ajustes', icon: '⚙️', path: '/settings' },
 ];
 
-export default function RegisterProductPage() {
+export default function ProductsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
-
   const { darkMode, toggleTheme } = useTheme();
+
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const [form, setForm] = useState({
-    name: '',
-    description: '',
-    price: '',
-    stock: '',
-    category: '',
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [products, setProducts] = useState<Product[]>([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
+
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const dark = darkMode;
 
   const isActiveRoute = (path: string) => {
     if (path === '/products') {
@@ -62,48 +53,63 @@ export default function RegisterProductPage() {
     navigate('/login');
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    setErrors(prev => ({ ...prev, [e.target.name]: '' }));
-    setApiError('');
-  };
-
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-    if (!form.name.trim()) newErrors.name = 'El nombre del producto es requerido.';
-    if (!form.description.trim()) newErrors.description = 'La descripción es requerida.';
-    if (!form.price || Number(form.price) <= 0) newErrors.price = 'El precio debe ser mayor a 0.';
-    if (!form.stock || Number(form.stock) < 0) newErrors.stock = 'El stock no puede ser negativo.';
-    if (!form.category) newErrors.category = 'Selecciona una categoría.';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
+  const loadProducts = async (currentPage = page) => {
     setLoading(true);
+    setApiError('');
     try {
-      await productApi.create({
-        name: form.name,
-        description: form.description,
-        price: Number(form.price),
-        stock: Number(form.stock),
-        category: form.category,
-      });
-      setSuccess(true);
-      setTimeout(() => navigate('/products'), 2000);
+      const response = await productApi.getAll(currentPage, limit);
+      setProducts(response.products ?? []);
+      setTotalCount(response.count ?? 0);
+      setPage(response.page ?? currentPage);
     } catch (err: unknown) {
-      setApiError(err instanceof Error ? err.message : 'Error al registrar producto.');
+      setApiError(err instanceof Error ? err.message : 'Error al cargar productos.');
     } finally {
       setLoading(false);
     }
   };
 
-  const dark = darkMode;
+  useEffect(() => {
+    loadProducts(1);
+  }, []);
+
+  const filteredProducts = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return products;
+
+    return products.filter(product =>
+      [
+        product.name,
+        product.description,
+        product.category,
+        String(product.price),
+        String(product.stock),
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(term)
+    );
+  }, [products, search]);
+
+  const handleToggleStatus = async (product: Product) => {
+    setUpdatingId(product.id);
+    try {
+      const response = await productApi.toggleStatus(product.id, !product.is_active);
+      setProducts(prev =>
+        prev.map(item => (item.id === product.id ? response.product : item))
+      );
+    } catch (err: unknown) {
+      setApiError(err instanceof Error ? err.message : 'No se pudo actualizar el estado.');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const formatPrice = (value: number) =>
+    new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      maximumFractionDigits: 0,
+    }).format(value);
 
   if (loggingOut) {
     return (
@@ -146,13 +152,14 @@ export default function RegisterProductPage() {
               <button
                 key={item.label}
                 onClick={() => navigate(item.path)}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs tracking-wide transition-all text-left ${isActiveRoute(item.path)
-                  ? dark
-                    ? 'bg-red-900/30 text-red-400 border border-red-900/30'
-                    : 'bg-red-100 text-red-700 border border-red-200'
-                  : dark
-                    ? 'text-white/40 hover:text-white/70 hover:bg-white/5'
-                    : 'text-black/50 hover:text-black/80 hover:bg-black/5'
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs tracking-wide transition-all text-left ${
+                  isActiveRoute(item.path)
+                    ? dark
+                      ? 'bg-red-900/30 text-red-400 border border-red-900/30'
+                      : 'bg-red-100 text-red-700 border border-red-200'
+                    : dark
+                      ? 'text-white/40 hover:text-white/70 hover:bg-white/5'
+                      : 'text-black/50 hover:text-black/80 hover:bg-black/5'
                 }`}
               >
                 <span className="text-base">{item.icon}</span>
@@ -173,13 +180,10 @@ export default function RegisterProductPage() {
       </aside>
 
       <main className="flex-1 flex flex-col relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#1a0000_0%,_#050000_35%,_#000000_65%)]" />
-        <div className="absolute w-[700px] h-[400px] rounded-full blur-[160px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-950/20 pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_20%,_rgba(0,0,0,0.7)_70%,_rgba(0,0,0,0.95)_100%)] pointer-events-none" />
-        <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-black/80 to-transparent pointer-events-none" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-black/80 to-transparent pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-black/80 to-transparent pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tl from-black/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(120,0,0,0.10),_transparent_40%)] pointer-events-none" />
+        {dark && (
+          <div className="absolute w-[600px] h-[300px] rounded-full blur-[150px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-950/10 pointer-events-none" />
+        )}
 
         <header className={`relative z-10 flex items-center justify-between px-8 py-4 border-b transition-colors duration-500 ${dark ? 'border-white/5' : 'border-black/10'}`}>
           <div>
@@ -187,7 +191,7 @@ export default function RegisterProductPage() {
               Inventario
             </p>
             <h1 className={`text-2xl font-bold tracking-wide ${dark ? 'text-white' : 'text-[#111]'}`}>
-              Registrar producto
+              Productos
             </h1>
           </div>
 
@@ -218,150 +222,232 @@ export default function RegisterProductPage() {
           </div>
         </header>
 
-        <div className="relative z-10 flex-1 flex items-center justify-center p-8">
-          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-8 w-full max-w-lg shadow-2xl flex flex-col items-center gap-6">
-            {success ? (
-              <div className="flex flex-col items-center gap-4 py-4">
-                <div className="w-16 h-16 rounded-full border border-red-900/40 flex items-center justify-center drop-shadow-[0_0_15px_rgba(180,0,0,0.3)]">
-                  <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-                  </svg>
+        <div className="relative z-10 flex-1 p-8 flex flex-col gap-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <p className={`text-[10px] tracking-widest uppercase mb-1 ${dark ? 'text-white/30' : 'text-black/40'}`}>
+                Inventario
+              </p>
+              <h2 className={`text-3xl font-bold tracking-wide ${dark ? 'text-white' : 'text-[#111]'}`}>
+                Productos
+              </h2>
+              <p className={`text-sm mt-1 ${dark ? 'text-white/40' : 'text-black/50'}`}>
+                Administra los productos registrados en BrioBox
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => loadProducts(page)}
+                className={`px-4 py-2 rounded-lg border transition-all text-sm ${
+                  dark
+                    ? 'border-white/10 text-white/60 hover:text-white hover:border-red-900/40 hover:bg-white/5'
+                    : 'border-black/10 text-black/60 hover:text-black hover:border-red-300 hover:bg-black/5'
+                }`}
+              >
+                Recargar
+              </button>
+
+              <button
+                onClick={() => navigate('/register-product')}
+                className="px-5 py-2.5 rounded-lg bg-[#cc0000] hover:bg-red-700 text-white font-semibold tracking-wide text-sm transition-colors shadow-lg shadow-red-950/30"
+              >
+                + Nuevo Producto
+              </button>
+            </div>
+          </div>
+
+          <div className={`border rounded-2xl p-5 flex flex-col gap-4 shadow-2xl ${
+            dark ? 'bg-[#141414] border-white/5' : 'bg-white border-black/10'
+          }`}>
+            <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+              <div className="w-full md:max-w-sm">
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre, categoría, descripción..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className={`w-full rounded-lg px-4 py-2.5 text-sm transition-colors focus:outline-none ${
+                    dark
+                      ? 'bg-[#111111] border border-[#2a2a2a] text-white placeholder-white/20 focus:border-red-900/60'
+                      : 'bg-gray-50 border border-black/10 text-black placeholder-black/30 focus:border-red-300'
+                  }`}
+                />
+              </div>
+
+              <div className={`flex items-center gap-2 text-xs uppercase tracking-widest ${dark ? 'text-white/30' : 'text-black/40'}`}>
+                <span>Total:</span>
+                <span className={dark ? 'text-white' : 'text-black'}>{totalCount}</span>
+              </div>
+            </div>
+
+            {apiError && (
+              <div className={`text-sm rounded-lg px-4 py-3 border ${
+                dark
+                  ? 'text-red-400 bg-red-950/20 border-red-900/30'
+                  : 'text-red-700 bg-red-50 border-red-200'
+              }`}>
+                {apiError}
+              </div>
+            )}
+
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <p className={`text-xs tracking-[0.4em] uppercase animate-pulse ${dark ? 'text-white/30' : 'text-black/30'}`}>
+                  Cargando productos...
+                </p>
+              </div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3">
+                <div className={`w-16 h-16 rounded-full border flex items-center justify-center text-2xl ${
+                  dark ? 'border-white/10 text-white/30' : 'border-black/10 text-black/30'
+                }`}>
+                  🛍️
                 </div>
-                <h2 className="text-white text-xl font-bold tracking-wide">¡Producto registrado!</h2>
-                <p className="text-white/30 text-xs text-center tracking-wider">Redirigiendo a productos...</p>
-                <div className="flex gap-1.5 items-center">
-                  <div className="w-1 h-1 rounded-full bg-red-500/80 animate-pulse" />
-                  <div className="w-8 h-px bg-red-500/40" />
-                  <div className="w-1 h-1 rounded-full bg-red-500/80 animate-pulse" />
-                </div>
+                <h2 className={`text-lg font-semibold tracking-wide ${dark ? 'text-white' : 'text-black'}`}>
+                  No hay productos
+                </h2>
+                <p className={`text-sm text-center max-w-md ${dark ? 'text-white/35' : 'text-black/45'}`}>
+                  Aún no se han registrado productos o no hay resultados para la búsqueda actual.
+                </p>
+                <button
+                  onClick={() => navigate('/register-product')}
+                  className="mt-2 px-5 py-2.5 rounded-lg bg-[#cc0000] hover:bg-red-700 text-white font-semibold tracking-wide text-sm transition-colors"
+                >
+                  Registrar primer producto
+                </button>
               </div>
             ) : (
               <>
-                <div className="flex flex-col items-center gap-2">
-                  <img
-                    src="/brioboxlogo.png"
-                    alt="BrioBox"
-                    className="w-14 h-14 object-contain drop-shadow-[0_0_15px_rgba(180,0,0,0.4)]"
-                  />
-                  <h2 className="text-white text-2xl font-bold tracking-wide">Nuevo Producto</h2>
-                  <p className="text-white/30 text-xs text-center tracking-wider uppercase">
-                    Completa los datos del producto
-                  </p>
+                <div className={`overflow-x-auto rounded-xl border ${dark ? 'border-white/5' : 'border-black/10'}`}>
+                  <table className="w-full min-w-[900px] text-sm">
+                    <thead className={dark ? 'bg-[#101010]' : 'bg-gray-50'}>
+                      <tr className={`text-left uppercase tracking-widest text-[10px] ${dark ? 'text-white/40' : 'text-black/40'}`}>
+                        <th className="px-4 py-4">Producto</th>
+                        <th className="px-4 py-4">Categoría</th>
+                        <th className="px-4 py-4">Precio</th>
+                        <th className="px-4 py-4">Stock</th>
+                        <th className="px-4 py-4">Estado</th>
+                        <th className="px-4 py-4">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredProducts.map(product => (
+                        <tr
+                          key={product.id}
+                          className={`border-t transition-colors ${dark ? 'border-white/5 hover:bg-white/[0.02]' : 'border-black/5 hover:bg-black/[0.02]'}`}
+                        >
+                          <td className="px-4 py-4">
+                            <div className="flex flex-col gap-1">
+                              <span className={`font-medium ${dark ? 'text-white' : 'text-black'}`}>
+                                {product.name}
+                              </span>
+                              <span className={`text-xs ${dark ? 'text-white/35' : 'text-black/45'}`}>
+                                {product.description}
+                              </span>
+                            </div>
+                          </td>
+
+                          <td className={`px-4 py-4 ${dark ? 'text-white/70' : 'text-black/70'}`}>
+                            {product.category}
+                          </td>
+
+                          <td className={`px-4 py-4 font-medium ${dark ? 'text-white' : 'text-black'}`}>
+                            {formatPrice(product.price)}
+                          </td>
+
+                          <td className="px-4 py-4">
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${
+                                product.stock > 0
+                                  ? dark
+                                    ? 'bg-white/5 text-white/70 border-white/10'
+                                    : 'bg-black/5 text-black/70 border-black/10'
+                                  : dark
+                                    ? 'bg-red-950/30 text-red-400 border-red-900/30'
+                                    : 'bg-red-50 text-red-700 border-red-200'
+                              }`}
+                            >
+                              {product.stock > 0 ? `${product.stock} disponibles` : 'Sin stock'}
+                            </span>
+                          </td>
+
+                          <td className="px-4 py-4">
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${
+                                product.is_active
+                                  ? dark
+                                    ? 'bg-green-950/20 text-green-400 border-green-900/30'
+                                    : 'bg-green-50 text-green-700 border-green-200'
+                                  : dark
+                                    ? 'bg-white/5 text-white/40 border-white/10'
+                                    : 'bg-gray-100 text-gray-600 border-gray-200'
+                              }`}
+                            >
+                              {product.is_active ? 'Activo' : 'Inactivo'}
+                            </span>
+                          </td>
+
+                          <td className="px-4 py-4">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleToggleStatus(product)}
+                                disabled={updatingId === product.id}
+                                className={`px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider transition-colors disabled:opacity-50 ${
+                                  product.is_active
+                                    ? dark
+                                      ? 'bg-white/5 text-white/60 hover:bg-red-950/20 hover:text-red-400'
+                                      : 'bg-black/5 text-black/60 hover:bg-red-50 hover:text-red-700'
+                                    : dark
+                                      ? 'bg-red-950/20 text-red-300 hover:bg-red-900/30 hover:text-red-200'
+                                      : 'bg-red-50 text-red-700 hover:bg-red-100'
+                                }`}
+                              >
+                                {updatingId === product.id
+                                  ? 'Actualizando...'
+                                  : product.is_active
+                                    ? 'Desactivar'
+                                    : 'Activar'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
 
-                <div className="w-full h-px bg-red-900/30" />
+                <div className="flex items-center justify-between gap-4 pt-2">
+                  <p className={`text-xs uppercase tracking-widest ${dark ? 'text-white/35' : 'text-black/45'}`}>
+                    Página {page}
+                  </p>
 
-                <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-white/40 text-[10px] uppercase tracking-widest">
-                      Nombre del producto
-                    </label>
-                    <input
-                      name="name"
-                      value={form.name}
-                      onChange={handleChange}
-                      placeholder="Proteína Whey 1kg"
-                      className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors"
-                    />
-                    {errors.name && <span className="text-red-500 text-[10px]">{errors.name}</span>}
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-white/40 text-[10px] uppercase tracking-widest">
-                      Descripción
-                    </label>
-                    <textarea
-                      name="description"
-                      value={form.description}
-                      onChange={handleChange}
-                      placeholder="Descripción breve del producto..."
-                      rows={3}
-                      className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors resize-none"
-                    />
-                    {errors.description && (
-                      <span className="text-red-500 text-[10px]">{errors.description}</span>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-white/40 text-[10px] uppercase tracking-widest">
-                        Precio (COP)
-                      </label>
-                      <input
-                        name="price"
-                        type="number"
-                        min="0"
-                        value={form.price}
-                        onChange={handleChange}
-                        placeholder="50000"
-                        className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors"
-                      />
-                      {errors.price && <span className="text-red-500 text-[10px]">{errors.price}</span>}
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="text-white/40 text-[10px] uppercase tracking-widest">
-                        Stock
-                      </label>
-                      <input
-                        name="stock"
-                        type="number"
-                        min="0"
-                        value={form.stock}
-                        onChange={handleChange}
-                        placeholder="10"
-                        className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors"
-                      />
-                      {errors.stock && <span className="text-red-500 text-[10px]">{errors.stock}</span>}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-white/40 text-[10px] uppercase tracking-widest">
-                      Categoría
-                    </label>
-                    <select
-                      name="category"
-                      value={form.category}
-                      onChange={handleChange}
-                      className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-red-900/60 transition-colors appearance-none cursor-pointer"
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => loadProducts(Math.max(1, page - 1))}
+                      disabled={page <= 1 || loading}
+                      className={`px-3 py-1.5 rounded-lg border transition-all text-xs disabled:opacity-40 ${
+                        dark
+                          ? 'border-white/10 text-white/60 hover:text-white hover:border-red-900/40 hover:bg-white/5'
+                          : 'border-black/10 text-black/60 hover:text-black hover:border-red-300 hover:bg-black/5'
+                      }`}
                     >
-                      <option value="" disabled className="text-white/20">
-                        Selecciona una categoría
-                      </option>
-                      {CATEGORIES.map(cat => (
-                        <option key={cat} value={cat} className="bg-[#1a1a1a] text-white">
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.category && (
-                      <span className="text-red-500 text-[10px]">{errors.category}</span>
-                    )}
+                      Anterior
+                    </button>
+
+                    <button
+                      onClick={() => loadProducts(page + 1)}
+                      disabled={loading || products.length < limit || page * limit >= totalCount}
+                      className={`px-3 py-1.5 rounded-lg border transition-all text-xs disabled:opacity-40 ${
+                        dark
+                          ? 'border-white/10 text-white/60 hover:text-white hover:border-red-900/40 hover:bg-white/5'
+                          : 'border-black/10 text-black/60 hover:text-black hover:border-red-300 hover:bg-black/5'
+                      }`}
+                    >
+                      Siguiente
+                    </button>
                   </div>
-
-                  {apiError && (
-                    <p className="text-red-500 text-xs text-center bg-red-950/20 border border-red-900/30 rounded-lg px-3 py-2">
-                      {apiError}
-                    </p>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-[#cc0000] hover:bg-red-700 disabled:opacity-40 text-white font-semibold py-2.5 rounded-lg transition-colors mt-1 tracking-widest text-sm uppercase shadow-lg shadow-red-950/30"
-                  >
-                    {loading ? 'Registrando...' : 'Registrar Producto →'}
-                  </button>
-                </form>
-
-                <button
-                  onClick={() => navigate('/products')}
-                  className="text-white/25 text-xs hover:text-white/50 transition-colors tracking-wider"
-                >
-                  ← Volver a productos
-                </button>
+                </div>
               </>
             )}
           </div>

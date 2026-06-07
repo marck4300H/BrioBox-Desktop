@@ -1,7 +1,7 @@
 import { http } from './client';
 
 export interface Product {
-  id: string;
+  id: number;
   name: string;
   description: string;
   price: number;
@@ -29,25 +29,30 @@ export interface UpdateProductPayload {
   is_active?: boolean;
 }
 
-export const productApi = {
-  getAll: () =>
-    http.get<{ success: boolean; products: Product[] }>('/products'),
+export interface GetProductsResponse {
+  success: boolean;
+  products: Product[];
+  count: number;
+  page: number;
+  limit: number;
+}
 
-  getById: (id: string) =>
+export const productApi = {
+  getAll: (page = 1, limit = 50) =>
+    http.get<GetProductsResponse>(`/products?page=${page}&limit=${limit}`),
+
+  getById: (id: number) =>
     http.get<{ success: boolean; product: Product }>(`/products/${id}`),
 
-  getActive: () =>
-    http.get<{ success: boolean; products: Product[] }>('/products/active'),
-
   create: (payload: CreateProductPayload) =>
-    http.post<{ success: boolean; product: Product }>('/products', payload),
+    http.post<{ success: boolean; product: Product; message?: string }>('/products', payload),
 
-  update: (id: string, payload: UpdateProductPayload) =>
-    http.put<{ success: boolean; product: Product }>(`/products/${id}`, payload),
+  update: (id: number, payload: UpdateProductPayload) =>
+    http.put<{ success: boolean; product: Product; message?: string }>(`/products/${id}`, payload),
 
-  delete: (id: string) =>
-    http.delete<{ success: boolean }>(`/products/${id}`),
+  delete: (id: number) =>
+    http.delete<{ success: boolean; message?: string }>(`/products/${id}`),
 
-  toggleStatus: (id: string, is_active: boolean) =>
-    http.put<{ success: boolean; product: Product }>(`/products/${id}`, { is_active }),
+  toggleStatus: (id: number, is_active: boolean) =>
+    http.put<{ success: boolean; product: Product; message?: string }>(`/products/${id}`, { is_active }),
 };
