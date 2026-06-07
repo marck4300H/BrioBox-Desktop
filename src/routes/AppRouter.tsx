@@ -15,12 +15,14 @@ import RegisterProductPage from '../pages/RegisterProductPage';
 import CashRegisterPage from '../pages/CashRegisterPage';
 import SuppliersPage from '../pages/SuppliersPage';
 import RegisterSupplierPage from '../pages/RegisterSupplierPage';
+import KioskScreen from '../screens/KiosScreen';
 
 export function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<PublicRoute />}>
+        <Route path="/kiosk" element={<KioskScreen />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
