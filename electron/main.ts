@@ -17,7 +17,7 @@ function createAdminWindow(display: Electron.Display) {
     y,
     width,
     height,
-    icon: path.join(__dirname, '../public/brioboxlogo.png'),
+    icon: path.join(__dirname, '../public/brioboxlogoicon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
