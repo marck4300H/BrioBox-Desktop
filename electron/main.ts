@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, screen } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
@@ -9,10 +9,14 @@ const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 let adminWindow: BrowserWindow | null = null
 let kioskWindow: BrowserWindow | null = null
 
-function createAdminWindow() {
+function createAdminWindow(display: Electron.Display) {
+  const { x, y, width, height } = display.bounds
+
   adminWindow = new BrowserWindow({
-    width: 1280,
-    height: 800,
+    x,
+    y,
+    width,
+    height,
     icon: path.join(__dirname, '../public/brioboxlogo.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
@@ -28,10 +32,14 @@ function createAdminWindow() {
   }
 }
 
-function createKioskWindow() {
+function createKioskWindow(display: Electron.Display) {
+  const { x, y, width, height } = display.bounds
+
   kioskWindow = new BrowserWindow({
-    width: 1024,
-    height: 768,
+    x,
+    y,
+    width,
+    height,
     icon: path.join(__dirname, '../public/brioboxlogo.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
@@ -50,8 +58,15 @@ function createKioskWindow() {
 }
 
 app.whenReady().then(() => {
-  createAdminWindow()
-  createKioskWindow()
+  const displays = screen.getAllDisplays()
+  const primary = screen.getPrimaryDisplay()
+  const secondary = displays.find(d => d.id !== primary.id)
+
+  // Admin siempre en pantalla principal
+  createAdminWindow(primary)
+
+  // Kiosk en secundaria si existe, si no en la misma primaria
+  createKioskWindow(secondary ?? primary)
 })
 
 app.on('window-all-closed', () => {
