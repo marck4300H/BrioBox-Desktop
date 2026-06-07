@@ -70,15 +70,13 @@ export default function Navbar({ onLogout }: NavbarProps) {
 
   return (
     <header
-      className={`relative z-30 flex items-center gap-0 border-b transition-colors duration-500 h-12 ${
-        dark ? 'bg-[#0a0a0a] border-white/5' : 'bg-white border-black/10'
-      }`}
+      className={`relative z-30 flex items-center gap-0 border-b transition-colors duration-500 h-12 ${dark ? 'bg-[#0a0a0a] border-white/5' : 'bg-white border-black/10'
+        }`}
     >
       {/* ── LOGO ── */}
       <div
-        className={`flex items-center gap-2.5 px-4 h-full flex-shrink-0 border-r cursor-pointer ${
-          dark ? 'border-white/5' : 'border-black/10'
-        }`}
+        className={`flex items-center gap-2.5 px-4 h-full flex-shrink-0 border-r cursor-pointer ${dark ? 'border-white/5' : 'border-black/10'
+          }`}
         onClick={() => navigate('/')}
       >
         <img
@@ -100,9 +98,8 @@ export default function Navbar({ onLogout }: NavbarProps) {
       {canScrollLeft && (
         <button
           onClick={() => scrollNav('left')}
-          className={`flex-shrink-0 h-full px-1.5 flex items-center justify-center transition-colors ${
-            dark ? 'text-white/30 hover:text-white/70 hover:bg-white/5' : 'text-black/30 hover:text-black/70 hover:bg-black/5'
-          }`}
+          className={`flex-shrink-0 h-full px-1.5 flex items-center justify-center transition-colors ${dark ? 'text-white/30 hover:text-white/70 hover:bg-white/5' : 'text-black/30 hover:text-black/70 hover:bg-black/5'
+            }`}
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -122,30 +119,27 @@ export default function Navbar({ onLogout }: NavbarProps) {
             <button
               key={item.label}
               onClick={() => navigate(item.path)}
-              className={`relative flex items-center gap-2 px-4 h-full flex-shrink-0 text-xs tracking-wide transition-all duration-200 whitespace-nowrap ${
-                active
+              className={`relative flex items-center gap-2 px-4 h-full flex-shrink-0 text-xs tracking-wide transition-all duration-200 whitespace-nowrap ${active
                   ? dark
                     ? 'text-red-400'
                     : 'text-red-600'
                   : dark
                     ? 'text-white/40 hover:text-white/75 hover:bg-white/4'
                     : 'text-black/45 hover:text-black/75 hover:bg-black/4'
-              }`}
+                }`}
             >
               <img
                 src={item.icon}
                 alt={item.label}
-                className={`w-3.5 h-3.5 object-contain flex-shrink-0 transition-all duration-200 ${
-                  active ? 'opacity-100' : 'opacity-40'
-                }`}
+                className={`w-3.5 h-3.5 object-contain flex-shrink-0 transition-all duration-200 ${active ? 'opacity-100' : 'opacity-40'
+                  }`}
               />
               {item.label}
               {/* Active underline */}
               {active && (
                 <span
-                  className={`absolute bottom-0 left-0 right-0 h-[2px] ${
-                    dark ? 'bg-red-500' : 'bg-red-600'
-                  }`}
+                  className={`absolute bottom-0 left-0 right-0 h-[2px] ${dark ? 'bg-red-500' : 'bg-red-600'
+                    }`}
                 />
               )}
             </button>
@@ -157,9 +151,8 @@ export default function Navbar({ onLogout }: NavbarProps) {
       {canScrollRight && (
         <button
           onClick={() => scrollNav('right')}
-          className={`flex-shrink-0 h-full px-1.5 flex items-center justify-center transition-colors ${
-            dark ? 'text-white/30 hover:text-white/70 hover:bg-white/5' : 'text-black/30 hover:text-black/70 hover:bg-black/5'
-          }`}
+          className={`flex-shrink-0 h-full px-1.5 flex items-center justify-center transition-colors ${dark ? 'text-white/30 hover:text-white/70 hover:bg-white/5' : 'text-black/30 hover:text-black/70 hover:bg-black/5'
+            }`}
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <path d="M4.5 2L8.5 6L4.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -169,21 +162,18 @@ export default function Navbar({ onLogout }: NavbarProps) {
 
       {/* ── RIGHT CONTROLS ── */}
       <div
-        className={`flex items-center gap-2 px-4 h-full flex-shrink-0 border-l ${
-          dark ? 'border-white/5' : 'border-black/10'
-        }`}
+        className={`flex items-center gap-2 px-4 h-full flex-shrink-0 border-l ${dark ? 'border-white/5' : 'border-black/10'
+          }`}
       >
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          className={`w-10 h-5 rounded-full relative transition-all duration-300 flex-shrink-0 ${
-            dark ? 'bg-red-900/60' : 'bg-black/20'
-          }`}
+          className={`w-10 h-5 rounded-full relative transition-all duration-300 flex-shrink-0 ${dark ? 'bg-red-900/60' : 'bg-black/20'
+            }`}
         >
           <div
-            className={`absolute top-0.5 w-4 h-4 rounded-full transition-all duration-300 flex items-center justify-center text-[7px] ${
-              dark ? 'left-5 bg-red-500' : 'left-0.5 bg-white'
-            }`}
+            className={`absolute top-0.5 w-4 h-4 rounded-full transition-all duration-300 flex items-center justify-center text-[7px] ${dark ? 'left-5 bg-red-500' : 'left-0.5 bg-white'
+              }`}
           >
             {dark ? '🌙' : '☀️'}
           </div>
@@ -191,11 +181,10 @@ export default function Navbar({ onLogout }: NavbarProps) {
 
         {/* Bell */}
         <div
-          className={`w-7 h-7 rounded-full flex items-center justify-center text-xs border transition-colors cursor-pointer flex-shrink-0 ${
-            dark
+          className={`w-7 h-7 rounded-full flex items-center justify-center text-xs border transition-colors cursor-pointer flex-shrink-0 ${dark
               ? 'border-white/10 text-white/50 hover:border-red-900/50 hover:text-red-400'
               : 'border-black/10 text-black/50 hover:border-red-300'
-          }`}
+            }`}
         >
           🔔
         </div>
@@ -203,15 +192,14 @@ export default function Navbar({ onLogout }: NavbarProps) {
         {/* User avatar */}
         <div
           onClick={() => setShowProfile(prev => !prev)}
-          className={`flex items-center gap-2 px-2.5 py-1 rounded-lg border transition-colors cursor-pointer flex-shrink-0 ${
-            showProfile
+          className={`flex items-center gap-2 px-2.5 py-1 rounded-lg border transition-colors cursor-pointer flex-shrink-0 ${showProfile
               ? dark
                 ? 'border-red-900/40 bg-red-950/10'
                 : 'border-red-300 bg-red-50'
               : dark
                 ? 'border-white/5 bg-white/5 hover:border-red-900/30'
                 : 'border-black/10 bg-black/5'
-          }`}
+            }`}
         >
           <img src="/user.png" alt="user" className="w-5 h-5 rounded-full object-cover" />
           <span className={`text-[11px] tracking-wide ${dark ? 'text-white/60' : 'text-black/60'}`}>
@@ -225,11 +213,10 @@ export default function Navbar({ onLogout }: NavbarProps) {
         {/* Logout */}
         <button
           onClick={handleLogout}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] tracking-wide transition-all flex-shrink-0 ${
-            dark
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] tracking-wide transition-all flex-shrink-0 ${dark
               ? 'text-white/30 hover:text-red-400 hover:bg-red-950/20'
               : 'text-black/35 hover:text-red-600 hover:bg-red-50'
-          }`}
+            }`}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

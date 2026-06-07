@@ -149,13 +149,13 @@ export default function CashRegisterPage() {
     setOpenLoading(true);
 
     try {
-    await cashRegisterApi.open({
-      openingBalance: Number(openForm.openingBalance),
-      notes: openForm.notes.trim() || undefined,
-    });
+      await cashRegisterApi.open({
+        openingBalance: Number(openForm.openingBalance),
+        notes: openForm.notes.trim() || undefined,
+      });
 
-    setOpenForm({ openingBalance: '', notes: '' });
-    await loadCurrentSession();
+      setOpenForm({ openingBalance: '', notes: '' });
+      await loadCurrentSession();
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'No se pudo abrir la caja.';
@@ -514,13 +514,12 @@ export default function CashRegisterPage() {
                     Diferencia
                   </p>
                   <p
-                    className={`text-2xl font-bold ${
-                      (totals?.difference ?? 0) > 0
+                    className={`text-2xl font-bold ${(totals?.difference ?? 0) > 0
                         ? 'text-green-400'
                         : (totals?.difference ?? 0) < 0
                           ? 'text-red-400'
                           : 'text-white'
-                    }`}
+                      }`}
                   >
                     {formatCurrency(totals?.difference ?? 0)}
                   </p>
@@ -566,11 +565,10 @@ export default function CashRegisterPage() {
                             >
                               <td className="px-4 py-4">
                                 <span
-                                  className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${
-                                    movement.movement_type === 'ingreso'
+                                  className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${movement.movement_type === 'ingreso'
                                       ? 'bg-green-950/20 text-green-400 border-green-900/30'
                                       : 'bg-red-950/20 text-red-400 border-red-900/30'
-                                  }`}
+                                    }`}
                                 >
                                   {movement.movement_type}
                                 </span>

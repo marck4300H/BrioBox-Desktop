@@ -217,11 +217,10 @@ export default function MembershipsPage() {
             { key: 'morosos', label: `Morosos ${morosos.length > 0 ? `(${morosos.length})` : ''}` },
           ] as { key: Tab; label: string }[]).map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`px-4 py-2 text-xs tracking-widest uppercase border-b-2 transition-all -mb-px ${
-                tab === t.key
+              className={`px-4 py-2 text-xs tracking-widest uppercase border-b-2 transition-all -mb-px ${tab === t.key
                   ? dark ? 'border-red-500 text-red-400' : 'border-red-600 text-red-600'
                   : dark ? 'border-transparent text-white/30 hover:text-white/60' : 'border-transparent text-black/40 hover:text-black/70'
-              }`}>
+                }`}>
               {t.label}
             </button>
           ))}
@@ -255,11 +254,10 @@ export default function MembershipsPage() {
                 <div className="flex items-center gap-2">
                   {(['todas', 'activa', 'pendiente', 'cancelada'] as const).map(f => (
                     <button key={f} onClick={() => setFilter(f)}
-                      className={`text-[10px] px-3 py-1.5 rounded-lg border tracking-widest uppercase transition-all ${
-                        filter === f
+                      className={`text-[10px] px-3 py-1.5 rounded-lg border tracking-widest uppercase transition-all ${filter === f
                           ? dark ? 'bg-red-900/30 text-red-400 border-red-900/40' : 'bg-red-100 text-red-700 border-red-200'
                           : dark ? 'border-white/5 text-white/30 hover:text-white/60' : 'border-black/10 text-black/40 hover:text-black/70'
-                      }`}>{f}</button>
+                        }`}>{f}</button>
                   ))}
                 </div>
                 <button onClick={openNewM} className="bg-[#cc0000] hover:bg-red-700 text-white text-xs font-semibold px-4 py-2 rounded-lg tracking-widest uppercase transition-colors shadow-lg shadow-red-950/30">

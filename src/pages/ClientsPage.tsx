@@ -169,11 +169,10 @@ export default function ClientsPage() {
               filteredClients.map((client, i) => (
                 <div
                   key={client.id}
-                  className={`grid grid-cols-5 px-4 py-3 items-center text-sm border-b transition-colors ${
-                    dark
+                  className={`grid grid-cols-5 px-4 py-3 items-center text-sm border-b transition-colors ${dark
                       ? `border-white/5 ${i % 2 === 0 ? 'bg-[#0f0f0f]' : 'bg-[#111]'} hover:bg-white/[0.03]`
                       : `border-black/5 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100`
-                  }`}
+                    }`}
                 >
                   <span className={`font-medium truncate ${dark ? 'text-white/80' : 'text-black/80'}`}>
                     {client.first_name} {client.middle_name} {client.paternal_last_name} {client.maternal_last_name}

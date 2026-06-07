@@ -41,24 +41,24 @@ export default function DashboardPage() {
       <Navbar onLogout={handleLogout} />
 
       {/* Page header */}
-      <div className="px-8 pt-8 pb-4">
-        <p className={`text-[10px] tracking-widest uppercase mb-0.5 ${dark ? 'text-white/30' : 'text-black/40'}`}>Overview</p>
-        <h1 className={`text-2xl font-bold tracking-wide ${dark ? 'text-white' : 'text-[#111]'}`}>Dashboard</h1>
+      <div className="px-8 lg:px-12 pt-8 lg:pt-10 pb-4 lg:pb-6">
+        <p className={`text-[10px] lg:text-xs tracking-widest uppercase mb-1.5 ${dark ? 'text-white/30' : 'text-black/40'}`}>Overview</p>
+        <h1 className={`text-2xl lg:text-4xl font-bold tracking-wide ${dark ? 'text-white' : 'text-[#111]'}`}>Dashboard</h1>
       </div>
 
       {/* Contenido */}
-      <div className="flex-1 px-8 pb-8 flex flex-col gap-8">
-        <div className="grid grid-cols-3 gap-4">
+      <div className="flex-1 px-8 lg:px-12 pb-8 lg:pb-12 flex flex-col gap-8 lg:gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
           {stats.map((stat, i) => (
             <div
               key={i}
-              className={`rounded-xl p-5 border flex flex-col gap-3 transition-all duration-500 hover:scale-[1.02] ${
+              className={`rounded-xl p-6 lg:p-8 border flex flex-col gap-4 transition-all duration-500 hover:scale-[1.02] ${
                 dark ? 'bg-[#141414] border-white/5 hover:border-red-900/30' : 'bg-white border-black/10 hover:border-red-300'
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-xl">{stat.icon}</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full tracking-wide ${
+                <span className="text-2xl lg:text-3xl">{stat.icon}</span>
+                <span className={`text-[10px] lg:text-xs px-2.5 py-0.5 rounded-full font-medium tracking-wide ${
                   stat.positive
                     ? dark ? 'bg-red-950/40 text-red-400' : 'bg-red-100 text-red-600'
                     : dark ? 'bg-white/5 text-white/30' : 'bg-black/5 text-black/40'
@@ -67,18 +67,18 @@ export default function DashboardPage() {
                 </span>
               </div>
               <div>
-                <p className={`text-[10px] uppercase tracking-widest mb-1 ${dark ? 'text-white/30' : 'text-black/40'}`}>{stat.label}</p>
-                <p className={`text-2xl font-bold ${dark ? 'text-white' : 'text-[#111]'}`}>
+                <p className={`text-[10px] lg:text-xs uppercase tracking-widest mb-1.5 ${dark ? 'text-white/30' : 'text-black/40'}`}>{stat.label}</p>
+                <p className={`text-2xl lg:text-4xl font-bold tracking-tight ${dark ? 'text-white' : 'text-[#111]'}`}>
                   {stat.value}
-                  {stat.sub && <span className={`text-sm font-normal ml-1 ${dark ? 'text-white/30' : 'text-black/30'}`}>{stat.sub}</span>}
+                  {stat.sub && <span className={`text-sm lg:text-lg font-normal ml-1.5 ${dark ? 'text-white/30' : 'text-black/30'}`}>{stat.sub}</span>}
                 </p>
               </div>
             </div>
           ))}
         </div>
 
-        <div className={`flex-1 rounded-xl border border-dashed flex items-center justify-center transition-colors duration-500 ${dark ? 'border-white/5' : 'border-black/10'}`}>
-          <p className={`text-xs tracking-widest uppercase ${dark ? 'text-white/15' : 'text-black/20'}`}>
+        <div className={`flex-1 min-h-[200px] lg:min-h-[300px] rounded-xl border border-dashed flex items-center justify-center transition-colors duration-500 ${dark ? 'border-white/5' : 'border-black/10'}`}>
+          <p className={`text-xs lg:text-sm tracking-widest uppercase ${dark ? 'text-white/15' : 'text-black/20'}`}>
             Próximamente más contenido...
           </p>
         </div>
