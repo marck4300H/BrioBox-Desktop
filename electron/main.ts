@@ -29,7 +29,8 @@ function createAdminWindow() {
 
 function createKioskWindow() {
   kioskWindow = new BrowserWindow({
-    fullscreen: true,
+    width: 1024,
+    height: 768,
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
