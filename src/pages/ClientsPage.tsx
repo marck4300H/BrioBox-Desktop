@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { userApi, type Client } from '../api/user.api';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
+import { searchIcon } from '../assets/icons';
 import Navbar from '../components/ui/Navbar';
 
 export default function ClientsPage() {
@@ -128,7 +129,7 @@ export default function ClientsPage() {
           {/* Buscador + botón */}
           <div className="flex items-center justify-between gap-4">
             <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border flex-1 max-w-sm transition-colors ${dark ? 'bg-[#111] border-white/5 focus-within:border-red-900/40' : 'bg-white border-black/10'}`}>
-              <span className="text-white/30 text-sm">🔍</span>
+              <img src={searchIcon} alt="Search" className="w-5 h-5 text-white/30" />
               <input
                 type="text"
                 value={search}

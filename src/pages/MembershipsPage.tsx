@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { membershipApi, type Membership, type MembershipPlan, type MembershipFreeze, type CreateFreezePayload } from '../api/membership.api';
 import { userApi, type Client } from '../api/user.api';
 import Navbar from '../components/ui/Navbar';
+import { active, pending, activemembership } from '../assets/icons/';
 
 const STATUS_STYLES = {
   activa: { dot: 'bg-emerald-500', badge: 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/30', label: 'Activa' },
@@ -235,12 +236,12 @@ export default function MembershipsPage() {
               {/* Stats */}
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { label: 'Total', value: memberships.length, icon: '🎫', color: dark ? 'text-white' : 'text-black' },
-                  { label: 'Activas', value: memberships.filter(m => m.status === 'activa').length, icon: '✅', color: 'text-emerald-400' },
-                  { label: 'Pendientes', value: memberships.filter(m => m.status === 'pendiente').length, icon: '⏳', color: 'text-yellow-400' },
+                  { label: 'Total', value: memberships.length, icon: activemembership, color: dark ? 'text-white' : 'text-black' },
+                  { label: 'Activas', value: memberships.filter(m => m.status === 'activa').length, icon: active, color: 'text-emerald-400' },
+                  { label: 'Pendientes', value: memberships.filter(m => m.status === 'pendiente').length, icon: pending, color: 'text-yellow-400' },
                 ].map((s, i) => (
                   <div key={i} className={`rounded-xl p-4 border flex items-center gap-4 ${dark ? 'bg-[#141414] border-white/5' : 'bg-white border-black/10'}`}>
-                    <span className="text-2xl">{s.icon}</span>
+                    <img src={s.icon} className="w-10 h-10 animate-pulse" />
                     <div>
                       <p className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/30' : 'text-black/40'}`}>{s.label}</p>
                       <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -250,7 +251,7 @@ export default function MembershipsPage() {
               </div>
 
               {/* Filtros + botón */}
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-between gap-4">               
                 <div className="flex items-center gap-2">
                   {(['todas', 'activa', 'pendiente', 'cancelada'] as const).map(f => (
                     <button key={f} onClick={() => setFilter(f)}

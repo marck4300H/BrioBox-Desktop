@@ -51,7 +51,7 @@ export default function LoginPage() {
 
     {/* Logo más pequeño */}
     <div className="flex flex-col items-center gap-2">
-      <img src="/brioboxlogoicon.png" alt="BrioBox" className="w-24 h-24 object-contain" />
+      <img src="/brioboxlogoicon.png" alt="BrioBox" className="w-24 h-24 object-contain drop-shadow-[0_0_15px_rgba(180,0,0,0.4)]" />
       <h1 className="text-white text-2xl font-bold tracking-wide">Bienvenido</h1>
       <p className="text-gray-400 text-sm text-center">Ingresa a tu cuenta para continuar</p>
     </div>

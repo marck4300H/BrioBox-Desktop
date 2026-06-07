@@ -357,20 +357,24 @@ export default function CashRegisterPage() {
             </div>
           ) : !currentSession ? (
             <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-6">
-              <div className="bg-[#141414] border border-white/5 rounded-2xl p-6 shadow-2xl flex flex-col gap-4">
+              <div className={dark ? 'bg-[#141414] border border-white/5 rounded-2xl p-6 shadow-2xl flex flex-col gap-4' : 'bg-white border-black/10 rounded-2xl p-6 shadow-2xl flex flex-col gap-4'}>
                 <div>
-                  <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
+                  <p className={`text-[10px] uppercase tracking-widest mb-1 ${
+                    dark ? 'text-white/30' : 'text-black/40'
+                  }`}>
                     Apertura
                   </p>
-                  <h2 className="text-2xl font-bold text-white">Abrir caja</h2>
-                  <p className="text-sm text-white/40 mt-1">
+                  <h2 className={dark ? 'text-2xl font-bold text-white' : 'text-2xl font-bold text-black'}>Abrir caja</h2>
+                  <p className={`text-sm mt-1 ${
+                    dark ? 'text-white/40' : 'text-black/60'
+                  }`}>
                     Registra el monto inicial para comenzar el turno.
                   </p>
                 </div>
 
                 <form onSubmit={handleOpenCash} className="flex flex-col gap-4">
                   <div className="flex flex-col gap-1">
-                    <label className="text-white/40 text-[10px] uppercase tracking-widest">
+                    <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/50'}`}>
                       Monto inicial
                     </label>
                     <input
@@ -381,20 +385,28 @@ export default function CashRegisterPage() {
                         setOpenForm(prev => ({ ...prev, openingBalance: e.target.value }))
                       }
                       placeholder="100000"
-                      className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors"
+                      className={`rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-colors ${
+                        dark
+                          ? 'bg-[#111111] border border-[#2a2a2a] text-white placeholder-white/20 focus:border-red-900/60'
+                          : 'bg-gray-50 border border-black/10 text-[#111] placeholder-black/30 focus:border-red-400'
+                      }`}
                     />
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-white/40 text-[10px] uppercase tracking-widest">
-                      Notes
+                    <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/50'}`}>
+                      Notas
                     </label>
                     <textarea
                       rows={4}
                       value={openForm.notes}
                       onChange={e => setOpenForm(prev => ({ ...prev, notes: e.target.value }))}
                       placeholder="Apertura turno mañana"
-                      className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors resize-none"
+                      className={`rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-colors ${
+                        dark
+                          ? 'bg-[#111111] border border-[#2a2a2a] text-white placeholder-white/20 focus:border-red-900/60'
+                          : 'bg-gray-50 border border-black/10 text-[#111] placeholder-black/30 focus:border-red-400'
+                      }`}
                     />
                   </div>
 
@@ -414,28 +426,28 @@ export default function CashRegisterPage() {
                 </form>
               </div>
 
-              <div className="bg-[#141414] border border-white/5 rounded-2xl p-6 shadow-2xl flex flex-col gap-4">
-                <p className="text-[10px] uppercase tracking-widest text-white/30">
+              <div className={dark ? 'bg-[#141414] border border-white/5 rounded-2xl p-6 shadow-2xl flex flex-col gap-4' : 'bg-white border-black/10 rounded-2xl p-6 shadow-2xl flex flex-col gap-4'}>
+                <p className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/30' : 'text-black/40'}`}>
                   Estado
                 </p>
-                <h3 className="text-xl font-bold text-white">No hay caja abierta</h3>
-                <p className="text-sm text-white/40">
+                <h3 className={dark ? 'text-xl font-bold text-white' : 'text-xl font-bold text-black'}>No hay caja abierta</h3>
+                <p className={`text-sm mt-1 ${dark ? 'text-white/40' : 'text-black/60'}`}>
                   Para comenzar a registrar egresos y visualizar el resumen del día,
                   primero debes abrir una sesión de caja.
                 </p>
 
                 <div className="grid grid-cols-2 gap-3 mt-2">
-                  <div className="rounded-xl border border-white/5 bg-[#101010] p-4">
-                    <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
+                  <div className={dark ? 'rounded-xl border border-white/5 bg-[#101010] p-4' : 'rounded-xl border border-black/10 bg-gray-50 p-4'}>
+                    <p className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/30' : 'text-black/40'} mb-1`}>
                       Session
                     </p>
-                    <p className="text-white font-semibold">Pendiente</p>
+                    <p className={dark ? 'text-white font-semibold' : 'text-black font-semibold'}>Pendiente</p>
                   </div>
-                  <div className="rounded-xl border border-white/5 bg-[#101010] p-4">
-                    <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
+                  <div className={dark ? 'rounded-xl border border-white/5 bg-[#101010] p-4' : 'rounded-xl border border-black/10 bg-gray-50 p-4'}>
+                    <p className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/30' : 'text-black/40'} mb-1`}>
                       Expected
                     </p>
-                    <p className="text-white font-semibold">{formatCurrency(0)}</p>
+                    <p className={dark ? 'text-white font-semibold' : 'text-black font-semibold'}>{formatCurrency(0)}</p>
                   </div>
                 </div>
               </div>

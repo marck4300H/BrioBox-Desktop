@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
+import { user, money, activemembership } from '../assets/icons';
 import Navbar from '../components/ui/Navbar';
 
 const stats = [
-  { label: 'Total Users', value: '20', change: 'more admins', positive: true, icon: '👥' },
-  { label: 'Active Memberships', value: '184', sub: '/ 1,248', change: '+5%', positive: true, icon: '🎫' },
-  { label: 'Daily Revenue', value: 'COP $200,000', change: '▲ Trending', positive: true, icon: '💵' },
+  { label: 'Total de Usuarios', value: '5', change: 'Un empleado nuevo', positive: true, icon: user },
+  { label: 'Membresías Activas', value: '10', sub: '', change: '+10%', positive: true, icon: activemembership },
+  { label: 'Ingresos Diarios', value: 'COP $200,000', change: '▲ +15% con respecto al día de ayer', positive: true, icon: money },
 ];
 
 export default function DashboardPage() {
@@ -57,7 +58,7 @@ export default function DashboardPage() {
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-2xl lg:text-3xl">{stat.icon}</span>
+                <img src={stat.icon} className="w-16 h-16 object-contain opacity-90 brightness-200 animate-pulse"/>
                 <span className={`text-[10px] lg:text-xs px-2.5 py-0.5 rounded-full font-medium tracking-wide ${
                   stat.positive
                     ? dark ? 'bg-red-950/40 text-red-400' : 'bg-red-100 text-red-600'

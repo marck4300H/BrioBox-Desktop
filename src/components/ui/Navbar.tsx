@@ -70,7 +70,7 @@ export default function Navbar({ onLogout }: NavbarProps) {
 
   return (
     <header
-      className={`relative z-30 flex items-center gap-0 border-b transition-colors duration-500 h-12 ${dark ? 'bg-[#0a0a0a] border-white/5' : 'bg-white border-black/10'
+      className={`relative z-30 flex items-center gap-0 border-b transition-colors duration-500 h-20 ${dark ? 'bg-[#0a0a0a] border-white/5' : 'bg-white border-black/10'
         }`}
     >
       {/* ── LOGO ── */}
@@ -80,15 +80,15 @@ export default function Navbar({ onLogout }: NavbarProps) {
         onClick={() => navigate('/')}
       >
         <img
-          src="/brioboxlogo.png"
+          src="/brioboxlogoicon.png"
           alt="BrioBox"
-          className={`w-7 h-7 object-contain ${dark ? 'drop-shadow-[0_0_8px_rgba(180,0,0,0.5)]' : ''}`}
+          className={`w-[5rem] h-[5rem] object-contain ${dark ? 'drop-shadow-[0_0_8px_rgba(180,0,0,0.5)] ml-[0.75rem]' : ''}`}
         />
         <div>
-          <p className={`font-bold text-[11px] tracking-widest uppercase leading-none ${dark ? 'text-white' : 'text-[#111]'}`}>
+          <p className={`font-bold text-[20px] tracking-widest uppercase leading-none ${dark ? 'text-white' : 'text-[#111]'}`}>
             BrioBox
           </p>
-          <p className={`text-[8px] tracking-widest uppercase leading-none mt-0.5 ${dark ? 'text-white/25' : 'text-black/35'}`}>
+          <p className={`text-[11px] tracking-widest uppercase leading-none mt-0.5 ${dark ? 'text-white/25' : 'text-black/35'}`}>
             Gym Management
           </p>
         </div>
@@ -110,7 +110,7 @@ export default function Navbar({ onLogout }: NavbarProps) {
       {/* ── NAV ITEMS ── */}
       <div
         ref={navRef}
-        className="flex items-center h-full overflow-x-auto scrollbar-none flex-1"
+        className="flex justify-between items-center h-full overflow-x-auto scrollbar-none flex-1"
         style={{ scrollbarWidth: 'none' }}
       >
         {menuItems.map(item => {
@@ -134,7 +134,7 @@ export default function Navbar({ onLogout }: NavbarProps) {
                 className={`w-3.5 h-3.5 object-contain flex-shrink-0 transition-all duration-200 ${active ? 'opacity-100' : 'opacity-40'
                   }`}
               />
-              {item.label}
+              <p className="text-[1.1rem] font-medium ">{item.label}</p>
               {/* Active underline */}
               {active && (
                 <span
@@ -168,11 +168,11 @@ export default function Navbar({ onLogout }: NavbarProps) {
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          className={`w-10 h-5 rounded-full relative transition-all duration-300 flex-shrink-0 ${dark ? 'bg-red-900/60' : 'bg-black/20'
+          className={`w-12 h-7 rounded-full relative transition-all duration-300 flex-shrink-0 ${dark ? 'bg-red-900/60' : 'bg-black/20'
             }`}
         >
           <div
-            className={`absolute top-0.5 w-4 h-4 rounded-full transition-all duration-300 flex items-center justify-center text-[7px] ${dark ? 'left-5 bg-red-500' : 'left-0.5 bg-white'
+            className={`absolute top-0.5 w-6 h-6 rounded-full transition-all duration-300 flex items-center justify-center text-[7px] ${dark ? 'left-5 bg-red-500' : 'left-0.5 bg-white'
               }`}
           >
             {dark ? '🌙' : '☀️'}
@@ -181,7 +181,7 @@ export default function Navbar({ onLogout }: NavbarProps) {
 
         {/* Bell */}
         <div
-          className={`w-7 h-7 rounded-full flex items-center justify-center text-xs border transition-colors cursor-pointer flex-shrink-0 ${dark
+          className={`w-9 h-9 rounded-full flex items-center justify-center text-xs border transition-colors cursor-pointer flex-shrink-0 ${dark
               ? 'border-white/10 text-white/50 hover:border-red-900/50 hover:text-red-400'
               : 'border-black/10 text-black/50 hover:border-red-300'
             }`}
@@ -201,7 +201,7 @@ export default function Navbar({ onLogout }: NavbarProps) {
                 : 'border-black/10 bg-black/5'
             }`}
         >
-          <img src="/user.png" alt="user" className="w-5 h-5 rounded-full object-cover" />
+          <img src="/user.png" alt="user" className="w-7 h-7 rounded-full object-cover" />
           <span className={`text-[11px] tracking-wide ${dark ? 'text-white/60' : 'text-black/60'}`}>
             {user?.name ?? 'Admin'}
           </span>
@@ -213,12 +213,12 @@ export default function Navbar({ onLogout }: NavbarProps) {
         {/* Logout */}
         <button
           onClick={handleLogout}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] tracking-wide transition-all flex-shrink-0 ${dark
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[1.0rem] tracking-wide transition-all flex-shrink-0 ${dark
               ? 'text-white/30 hover:text-red-400 hover:bg-red-950/20'
               : 'text-black/35 hover:text-red-600 hover:bg-red-50'
             }`}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <polyline points="16 17 21 12 16 7" />
             <line x1="21" y1="12" x2="9" y2="12" />

@@ -91,7 +91,7 @@ export default function SuppliersPage() {
         {/* Page header */}
         <div className="relative z-10 px-8 pt-8 pb-4">
           <p className={`text-[10px] tracking-widest uppercase mb-0.5 ${dark ? 'text-white/30' : 'text-black/40'}`}>
-            Inventory
+            Gestión de proveedores
           </p>
           <h1 className={`text-2xl font-bold tracking-wide ${dark ? 'text-white' : 'text-[#111]'}`}>
             Proveedores
@@ -100,16 +100,8 @@ export default function SuppliersPage() {
 
         <div className="relative z-10 flex-1 p-8 flex flex-col gap-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <p className="text-[10px] tracking-widest uppercase text-white/30 mb-1">
-                Gestión de proveedores
-              </p>
-              <h2 className="text-3xl font-bold tracking-wide text-white">Proveedores</h2>
-              <p className="text-sm text-white/40 mt-1">
-                Visualiza y administra los proveedores registrados en BrioBox
-              </p>
+            <div>                    
             </div>
-
             <button
               onClick={() => navigate('/register-supplier')}
               className="px-5 py-2.5 rounded-lg bg-[#cc0000] hover:bg-red-700 text-white font-semibold tracking-wide text-sm transition-colors shadow-lg shadow-red-950/30"
@@ -118,15 +110,21 @@ export default function SuppliersPage() {
             </button>
           </div>
 
-          <div className="bg-[#141414] border border-white/5 rounded-2xl p-5 flex flex-col gap-4 shadow-2xl">
+          <div className={`bg-[#141414] border border-white/5 rounded-2xl p-5 flex flex-col gap-4 shadow-2xl ${
+            dark ? "bg-[#141414]" : "bg-[#f0f0f0]"
+          }`}>
             <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-              <div className="w-full md:max-w-sm">
+              <div className={`w-full md:max-w-sm ${dark ? "bg-[#141414]" : "bg-[#f0f0f0]"}`}>
                 <input
                   type="text"
                   placeholder="Buscar por nombre, NIT, teléfono o correo..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors"
+                  className={`w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-colors ${
+                    dark
+                      ? 'bg-[#111111] border border-[#2a2a2a] text-white placeholder-white/20 focus:border-red-900/60'
+                      : 'bg-gray-50 border border-black/10 text-[#111] placeholder-black/30 focus:border-red-400'
+                  }`}
                 />
               </div>
 
@@ -139,14 +137,14 @@ export default function SuppliersPage() {
             <div className="overflow-x-auto rounded-xl border border-white/5">
               <table className="w-full min-w-[950px] text-sm">
                 <thead className="bg-[#101010]">
-                  <tr className="text-left text-white/40 uppercase tracking-widest text-[10px]">
-                    <th className="px-4 py-4">Proveedor</th>
-                    <th className="px-4 py-4">NIT</th>
-                    <th className="px-4 py-4">Teléfono</th>
-                    <th className="px-4 py-4">Correo</th>
-                    <th className="px-4 py-4">Productos</th>
-                    <th className="px-4 py-4">Estado</th>
-                    <th className="px-4 py-4">Acciones</th>
+                  <tr className={`text-left text-white/40 uppercase tracking-widest text-[10px] ${dark ? 'bg-[#111111] border border-[#2a2a2a] text-white placeholder-white/20 focus:border-red-900/60' : 'bg-gray-50 border border-black/10 text-[#111] placeholder-black/30 focus:border-red-400'}`}>
+                    <th className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>Proveedor</th>
+                    <th className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>NIT</th>
+                    <th className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>Teléfono</th>
+                    <th className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>Correo</th>
+                    <th className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>Productos</th>
+                    <th className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>Estado</th>
+                    <th className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -155,17 +153,21 @@ export default function SuppliersPage() {
                       key={supplier.id}
                       className="border-t border-white/5 hover:bg-white/[0.02] transition-colors"
                     >
-                      <td className="px-4 py-4 text-white font-medium">{supplier.name}</td>
-                      <td className="px-4 py-4 text-white/70">{supplier.nit}</td>
-                      <td className="px-4 py-4 text-white/70">{supplier.phone}</td>
-                      <td className="px-4 py-4 text-white/70">{supplier.email}</td>
-                      <td className="px-4 py-4 text-white">{supplier.products}</td>
-                      <td className="px-4 py-4">
+                      <td className={`px-4 py-4 font-medium ${dark ? 'text-white' : 'text-[#111]'}`}>{supplier.name}</td>
+                      <td className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>{supplier.nit}</td>
+                      <td className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>{supplier.phone}</td>
+                      <td className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>{supplier.email}</td>
+                      <td className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>{supplier.products}</td>
+                      <td className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}> 
                         <span
                           className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${
                             supplier.status === 'Activo'
-                              ? 'bg-green-950/20 text-green-400 border-green-900/30'
-                              : 'bg-yellow-950/20 text-yellow-300 border-yellow-700/30'
+                              ? dark
+                                ? 'bg-green-950/20 text-green-400 border-green-900/30'
+                                : 'bg-green-50 text-green-700 border-green-200'
+                              : dark
+                                ? 'bg-yellow-950/20 text-yellow-300 border-yellow-700/30'
+                                : 'bg-yellow-50 text-yellow-700 border-yellow-200'
                           }`}
                         >
                           {supplier.status}
@@ -173,10 +175,23 @@ export default function SuppliersPage() {
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
-                          <button className="px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider bg-white/5 text-white/60 hover:bg-white/10 transition-colors">
+                          <button
+                            className={`px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider transition-colors ${
+                              dark
+                                ? 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
+                                : 'bg-black/5 text-black/60 hover:bg-black/10 hover:text-black'
+                            }`}
+                          >
                             Editar
                           </button>
-                          <button className="px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider bg-red-950/20 text-red-300 hover:bg-red-900/30 transition-colors">
+
+                          <button
+                            className={`px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider transition-colors ${
+                              dark
+                                ? 'bg-red-950/20 text-red-400 hover:bg-red-900/30'
+                                : 'bg-red-100 text-red-600 hover:bg-red-200'
+                            }`}
+                          >
                             Eliminar
                           </button>
                         </div>
@@ -185,7 +200,7 @@ export default function SuppliersPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </div>  
           </div>
         </div>
       </main>

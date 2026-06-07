@@ -131,13 +131,6 @@ export default function ProductsPage() {
         <div className="relative z-10 flex-1 p-8 flex flex-col gap-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <p className="text-[10px] tracking-widest uppercase text-white/30 mb-1">
-                Inventario
-              </p>
-              <h2 className="text-3xl font-bold tracking-wide text-white">Productos</h2>
-              <p className="text-sm text-white/40 mt-1">
-                Administra los productos registrados en BrioBox
-              </p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -157,7 +150,7 @@ export default function ProductsPage() {
             </div>
           </div>
 
-          <div className="bg-[#141414] border border-white/5 rounded-2xl p-5 flex flex-col gap-4 shadow-2xl">
+          <div className={`rounded-2xl p-6 shadow-2xl flex flex-col gap-4 border ${dark ? 'bg-[#141414] border-white/5' : 'bg-white border-black/10'}`}>
             <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
               <div className="w-full md:max-w-sm">
                 <input
@@ -165,13 +158,16 @@ export default function ProductsPage() {
                   placeholder="Buscar por nombre, categoría, descripción..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors"
-                />
+                  className={`w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-colors ${dark
+                    ? 'bg-[#111111] border border-[#2a2a2a] text-white placeholder-white/20 focus:border-red-900/60'
+                    : 'bg-gray-50 border border-black/10 text-[#111] placeholder-black/30 focus:border-red-400'
+                    }`}
+                />  
               </div>
 
               <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-white/30">
-                <span>Total:</span>
-                <span className="text-white">{totalCount}</span>
+                <span className={`${dark ? 'text-white' : 'text-[#111]'}`}>Total:</span>
+                <span className={`${dark ? 'text-white' : 'text-[#111]'}`}>{totalCount}</span>
               </div>
             </div>
 
@@ -183,21 +179,35 @@ export default function ProductsPage() {
 
             {loading ? (
               <div className="flex items-center justify-center py-16">
-                <p className="text-white/30 text-xs tracking-[0.4em] uppercase animate-pulse">
+                <p className={`text-white/30 text-xs tracking-[0.4em] uppercase animate-pulse ${dark ? 'text-white' : 'text-[#111]'}`}>
                   Cargando productos...
                 </p>
               </div>
             ) : filteredProducts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center text-2xl text-white/30">
-                  🛍️
-                </div>
-                <h2 className="text-white text-lg font-semibold tracking-wide">
-                  No hay productos
-                </h2>
-                <p className="text-white/35 text-sm text-center max-w-md">
-                  Aún no se han registrado productos o no hay resultados para la búsqueda actual.
-                </p>
+              <div
+              className={`w-16 h-16 rounded-full border flex items-center justify-center text-2xl ${
+                dark
+                  ? 'border-white/10 text-white/30'
+                  : 'border-black/10 text-black/30'
+              }`}
+            >
+              🛍️
+            </div>
+            <h2
+              className={`text-lg font-semibold tracking-wide ${
+                dark ? 'text-white' : 'text-[#111]'
+              }`}
+            >
+              No hay productos
+            </h2>
+            <p
+              className={`text-sm text-center max-w-md ${
+                dark ? 'text-white/40' : 'text-black/50'
+              }`}
+            >
+              Aún no se han registrado productos o no hay resultados para la búsqueda actual.
+            </p>
                 <button
                   onClick={() => navigate('/register-product')}
                   className="mt-2 px-5 py-2.5 rounded-lg bg-[#cc0000] hover:bg-red-700 text-white font-semibold tracking-wide text-sm transition-colors"
