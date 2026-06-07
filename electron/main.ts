@@ -13,6 +13,7 @@ function createAdminWindow() {
   adminWindow = new BrowserWindow({
     width: 1280,
     height: 800,
+    icon: path.join(__dirname, '../public/briobox-icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
@@ -31,6 +32,7 @@ function createKioskWindow() {
   kioskWindow = new BrowserWindow({
     width: 1024,
     height: 768,
+    icon: path.join(__dirname, '../public/briobox-icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
