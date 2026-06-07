@@ -26,7 +26,10 @@ export default function ProductsPage() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState('');
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
 
   const isActiveRoute = (path: string) => {
     if (path === '/products') {
@@ -47,12 +50,14 @@ export default function ProductsPage() {
     navigate('/login');
   };
 
-  const loadProducts = async () => {
+  const loadProducts = async (currentPage = page) => {
     setLoading(true);
     setApiError('');
     try {
-      const response = await productApi.getAll();
+      const response = await productApi.getAll(currentPage, limit);
       setProducts(response.products ?? []);
+      setTotalCount(response.count ?? 0);
+      setPage(response.page ?? currentPage);
     } catch (err: unknown) {
       setApiError(err instanceof Error ? err.message : 'Error al cargar productos.');
     } finally {
@@ -61,7 +66,7 @@ export default function ProductsPage() {
   };
 
   useEffect(() => {
-    loadProducts();
+    loadProducts(1);
   }, []);
 
   const filteredProducts = useMemo(() => {
@@ -229,7 +234,7 @@ export default function ProductsPage() {
 
             <div className="flex items-center gap-3">
               <button
-                onClick={loadProducts}
+                onClick={() => loadProducts(page)}
                 className="px-4 py-2 rounded-lg border border-white/10 text-white/60 hover:text-white hover:border-red-900/40 hover:bg-white/5 transition-all text-sm"
               >
                 Recargar
@@ -258,7 +263,7 @@ export default function ProductsPage() {
 
               <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-white/30">
                 <span>Total:</span>
-                <span className="text-white">{filteredProducts.length}</span>
+                <span className="text-white">{totalCount}</span>
               </div>
             </div>
 
@@ -373,6 +378,29 @@ export default function ProductsPage() {
                     ))}
                   </tbody>
                 </table>
+                <div className="flex items-center justify-between gap-4 pt-2">
+                  <p className="text-xs text-white/35 uppercase tracking-widest">
+                    Página {page}
+                  </p>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => loadProducts(Math.max(1, page - 1))}
+                      disabled={page <= 1 || loading}
+                      className="px-3 py-1.5 rounded-lg border border-white/10 text-white/60 hover:text-white hover:border-red-900/40 hover:bg-white/5 transition-all text-xs disabled:opacity-40"
+                    >
+                      Anterior
+                    </button>
+
+                    <button
+                      onClick={() => loadProducts(page + 1)}
+                      disabled={loading || products.length < limit || page * limit >= totalCount}
+                      className="px-3 py-1.5 rounded-lg border border-white/10 text-white/60 hover:text-white hover:border-red-900/40 hover:bg-white/5 transition-all text-xs disabled:opacity-40"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
