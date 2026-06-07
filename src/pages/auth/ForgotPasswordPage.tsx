@@ -46,9 +46,9 @@ export default function ForgotPasswordPage() {
             {/* Header */}
             <div className="flex flex-col items-center gap-2">
               <img
-                src="/brioboxlogo.png"
+                src="/brioboxlogoicon.png"
                 alt="BrioBox"
-                className="w-16 h-16 object-contain drop-shadow-[0_0_15px_rgba(180,0,0,0.4)]"
+                className="w-20 h-20 object-contain drop-shadow-[0_0_15px_rgba(180,0,0,0.4)]"
               />
               <h1 className="text-white text-2xl font-bold tracking-wide">Recuperar acceso</h1>
               <p className="text-white/30 text-xs text-center tracking-wider">
