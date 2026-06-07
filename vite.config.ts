@@ -13,5 +13,16 @@ export default defineConfig({
         input: 'electron/preload.ts',
       },
     }),
+    {
+      name: 'spa-fallback',
+      configureServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          if (req.url?.startsWith('/kiosk')) {
+            req.url = '/'
+          }
+          next()
+        })
+      },
+    },
   ],
 })
