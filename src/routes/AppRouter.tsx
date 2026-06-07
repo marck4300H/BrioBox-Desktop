@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { PublicRoute, PrivateRoute } from './Guards';
 import LoginPage from '../pages/auth/LoginPage';
 import RegisterPage from '../pages/auth/RegisterPage';
@@ -17,12 +17,15 @@ import SuppliersPage from '../pages/SuppliersPage';
 import RegisterSupplierPage from '../pages/RegisterSupplierPage';
 import KioskScreen from '../screens/KiosScreen';
 
+const initialRoute = window.location.hash === '#/kiosk' ? '/kiosk' : '/'
+
 export function AppRouter() {
   return (
-    <BrowserRouter>
+    <MemoryRouter initialEntries={[initialRoute]}>
       <Routes>
-        <Route element={<PublicRoute />}>
         <Route path="/kiosk" element={<KioskScreen />} />
+
+        <Route element={<PublicRoute />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -45,6 +48,6 @@ export function AppRouter() {
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
-    </BrowserRouter>
-  );
+    </MemoryRouter>
+  )
 }
