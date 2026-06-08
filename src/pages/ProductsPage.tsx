@@ -37,10 +37,13 @@ export default function ProductsPage() {
   const loadProducts = async (currentPage = page) => {
     setLoading(true);
     setApiError('');
+
     try {
       const response = await productApi.getAll(currentPage, limit);
-      setProducts(response.products ?? []);
-      setTotalCount(response.count ?? 0);
+      const activeProducts = (response.products ?? []).filter(product => product.is_active);
+
+      setProducts(activeProducts);
+      setTotalCount(activeProducts.length);
       setPage(response.page ?? currentPage);
     } catch (err: unknown) {
       setApiError(err instanceof Error ? err.message : 'Error al cargar productos.');
@@ -90,11 +93,10 @@ export default function ProductsPage() {
 
     try {
       await productApi.delete(deleteTarget.id);
-
-      setProducts(prev => prev.filter(product => product.id !== deleteTarget.id));
       setDeleteTarget(null);
+      await loadProducts(page);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'No se pudo eliminar el producto.');
+      setApiError(err instanceof Error ? err.message : 'No se pudo eliminar el producto.');
     } finally {
       setDeletingId(null);
     }
