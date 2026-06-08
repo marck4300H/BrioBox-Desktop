@@ -11,17 +11,8 @@ import {
   type UpdateFreezePayload,
 } from '../api/membership.api';
 import { userApi, type Client } from '../api/user.api';
-import ProfilePanel from '../components/ui/ProfilePanel';
-
-const menuItems = [
-  { label: 'Clientes', icon: '👤', path: '/clients' },
-  { label: 'Membresías', icon: '🎫', path: '/memberships' },
-  { label: 'Cuadre de caja', icon: '💰', path: '/cash' },
-  { label: 'Proveedores', icon: '📦', path: '/suppliers' },
-  { label: 'Productos', icon: '🛍️', path: '/products' },
-  { label: 'Registrar Empleado', icon: '➕', path: '/register' },
-  { label: 'Ajustes', icon: '⚙️', path: '/settings' },
-];
+import Navbar from '../components/ui/Navbar';
+import { active, pending, activemembership } from '../assets/icons/';
 
 const STATUS_STYLES = {
   activa: { dot: 'bg-emerald-500', badge: 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/30', label: 'Activa' },
@@ -32,12 +23,11 @@ const STATUS_STYLES = {
 type Tab = 'membresias' | 'planes' | 'morosos';
 
 export default function MembershipsPage() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
-  const { darkMode, toggleTheme } = useTheme();
+  const { darkMode } = useTheme();
   const dark = darkMode;
   const [loggingOut, setLoggingOut] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
   const [tab, setTab] = useState<Tab>('membresias');
 
   // — Membresías —
@@ -529,58 +519,17 @@ export default function MembershipsPage() {
   );
 
   return (
-    <div className={`flex min-h-screen transition-colors duration-500 ${dark ? 'bg-[#0a0a0a] text-white' : 'bg-[#f0f0f0] text-[#111]'}`}>
+    <div className={`flex flex-col min-h-screen transition-colors duration-500 ${dark ? 'bg-[#0a0a0a] text-white' : 'bg-[#f0f0f0] text-[#111]'}`}>
+      <Navbar onLogout={handleLogout} />
 
-      {/* SIDEBAR */}
-      <aside className={`w-56 flex flex-col justify-between py-6 px-4 border-r transition-colors duration-500 ${dark ? 'bg-[#0f0f0f] border-white/5' : 'bg-white border-black/10'}`}>
-        <div className="flex flex-col gap-6">
-          <div className={`flex flex-col items-center gap-2 pb-4 border-b ${dark ? 'border-white/5' : 'border-black/10'}`}>
-            <img src="/brioboxlogo.png" alt="BrioBox" className={`w-12 h-12 object-contain ${dark ? 'drop-shadow-[0_0_10px_rgba(180,0,0,0.4)]' : ''}`} />
-            <div className="text-center">
-              <p className={`font-bold text-sm tracking-widest uppercase ${dark ? 'text-white' : 'text-[#111]'}`}>BrioBox</p>
-              <p className={`text-[9px] tracking-widest uppercase ${dark ? 'text-white/30' : 'text-black/40'}`}>Gym Management</p>
-            </div>
-          </div>
-          <nav className="flex flex-col gap-1">
-            {menuItems.map(item => (
-              <button key={item.label} onClick={() => navigate(item.path)}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs tracking-wide transition-all text-left ${
-                  item.path === '/memberships'
-                    ? dark ? 'bg-red-900/30 text-red-400 border border-red-900/30' : 'bg-red-100 text-red-700 border border-red-200'
-                    : dark ? 'text-white/40 hover:text-white/70 hover:bg-white/5' : 'text-black/50 hover:text-black/80 hover:bg-black/5'
-                }`}>
-                <span className="text-base">{item.icon}</span>{item.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-        <button onClick={handleLogout} disabled={loggingOut}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs tracking-wide transition-all ${dark ? 'text-white/30 hover:text-red-500 hover:bg-red-950/20' : 'text-black/40 hover:text-red-600 hover:bg-red-50'}`}>
-          <span>🚪</span> Logout
-        </button>
-      </aside>
+      {/* Page header */}
+      <div className="px-8 pt-8 pb-4">
+        <p className={`text-[10px] tracking-widest uppercase mb-0.5 ${dark ? 'text-white/30' : 'text-black/40'}`}>Gestión</p>
+        <h1 className={`text-2xl font-bold tracking-wide ${dark ? 'text-white' : 'text-[#111]'}`}>Membresías</h1>
+      </div>
 
       {/* MAIN */}
       <main className="flex-1 flex flex-col">
-
-        {/* Topbar */}
-        <header className={`flex items-center justify-between px-8 py-4 border-b transition-colors duration-500 ${dark ? 'border-white/5' : 'border-black/10'}`}>
-          <div>
-            <p className={`text-[10px] tracking-widest uppercase mb-0.5 ${dark ? 'text-white/30' : 'text-black/40'}`}>Gestión</p>
-            <h1 className={`text-2xl font-bold tracking-wide ${dark ? 'text-white' : 'text-[#111]'}`}>Membresías</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <button onClick={toggleTheme} className={`w-12 h-6 rounded-full relative transition-all duration-300 ${dark ? 'bg-red-900/60' : 'bg-black/20'}`}>
-              <div className={`absolute top-1 w-4 h-4 rounded-full transition-all duration-300 flex items-center justify-center text-[8px] ${dark ? 'left-7 bg-red-500' : 'left-1 bg-white'}`}>{dark ? '🌙' : '☀️'}</div>
-            </button>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm border cursor-pointer ${dark ? 'border-white/10 text-white/50 hover:border-red-900/50 hover:text-red-400' : 'border-black/10 text-black/50'}`}>🔔</div>
-            <div onClick={() => setShowProfile(p => !p)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${showProfile ? dark ? 'border-red-900/40 bg-red-950/10' : 'border-red-300 bg-red-50' : dark ? 'border-white/5 bg-white/5 hover:border-red-900/30' : 'border-black/10 bg-black/5'}`}>
-              <img src="/user.png" alt="user" className="w-6 h-6 rounded-full object-cover" />
-              <span className={`text-xs tracking-wide ${dark ? 'text-white/60' : 'text-black/60'}`}>{user?.name ?? 'Admin'}</span>
-            </div>
-          </div>
-        </header>
 
         {/* Tabs */}
         <div className={`flex items-center gap-1 px-8 pt-4 border-b ${dark ? 'border-white/5' : 'border-black/10'}`}>
@@ -590,11 +539,10 @@ export default function MembershipsPage() {
             { key: 'morosos', label: `Morosos ${morosos.length > 0 ? `(${morosos.length})` : ''}` },
           ] as { key: Tab; label: string }[]).map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`px-4 py-2 text-xs tracking-widest uppercase border-b-2 transition-all -mb-px ${
-                tab === t.key
+              className={`px-4 py-2 text-xs tracking-widest uppercase border-b-2 transition-all -mb-px ${tab === t.key
                   ? dark ? 'border-red-500 text-red-400' : 'border-red-600 text-red-600'
                   : dark ? 'border-transparent text-white/30 hover:text-white/60' : 'border-transparent text-black/40 hover:text-black/70'
-              }`}>
+                }`}>
               {t.label}
             </button>
           ))}
@@ -609,12 +557,12 @@ export default function MembershipsPage() {
               {/* Stats */}
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { label: 'Total', value: memberships.length, icon: '🎫', color: dark ? 'text-white' : 'text-black' },
-                  { label: 'Activas', value: memberships.filter(m => m.status === 'activa').length, icon: '✅', color: 'text-emerald-400' },
-                  { label: 'Pendientes', value: memberships.filter(m => m.status === 'pendiente').length, icon: '⏳', color: 'text-yellow-400' },
+                  { label: 'Total', value: memberships.length, icon: activemembership, color: dark ? 'text-white' : 'text-black' },
+                  { label: 'Activas', value: memberships.filter(m => m.status === 'activa').length, icon: active, color: 'text-emerald-400' },
+                  { label: 'Pendientes', value: memberships.filter(m => m.status === 'pendiente').length, icon: pending, color: 'text-yellow-400' },
                 ].map((s, i) => (
                   <div key={i} className={`rounded-xl p-4 border flex items-center gap-4 ${dark ? 'bg-[#141414] border-white/5' : 'bg-white border-black/10'}`}>
-                    <span className="text-2xl">{s.icon}</span>
+                    <img src={s.icon} className="w-10 h-10 animate-pulse" />
                     <div>
                       <p className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/30' : 'text-black/40'}`}>{s.label}</p>
                       <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -624,15 +572,14 @@ export default function MembershipsPage() {
               </div>
 
               {/* Filtros + botón */}
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-between gap-4">               
                 <div className="flex items-center gap-2">
                   {(['todas', 'activa', 'pendiente', 'cancelada'] as const).map(f => (
                     <button key={f} onClick={() => setFilter(f)}
-                      className={`text-[10px] px-3 py-1.5 rounded-lg border tracking-widest uppercase transition-all ${
-                        filter === f
+                      className={`text-[10px] px-3 py-1.5 rounded-lg border tracking-widest uppercase transition-all ${filter === f
                           ? dark ? 'bg-red-900/30 text-red-400 border-red-900/40' : 'bg-red-100 text-red-700 border-red-200'
                           : dark ? 'border-white/5 text-white/30 hover:text-white/60' : 'border-black/10 text-black/40 hover:text-black/70'
-                      }`}>{f}</button>
+                        }`}>{f}</button>
                   ))}
                 </div>
                 <button onClick={openNewM} className="bg-[#cc0000] hover:bg-red-700 text-white text-xs font-semibold px-4 py-2 rounded-lg tracking-widest uppercase transition-colors shadow-lg shadow-red-950/30">
@@ -1226,7 +1173,6 @@ export default function MembershipsPage() {
         </div>
       )}
 
-      {showProfile && <ProfilePanel dark={dark} onClose={() => setShowProfile(false)} />}
       {dark && <div className="fixed w-[600px] h-[300px] rounded-full blur-[150px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-950/10 pointer-events-none" />}
     </div>
   );

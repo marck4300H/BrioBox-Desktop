@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import { supplierApi } from '../api/supplier.api';
+import Navbar from '../components/ui/Navbar';
 
 const menuItems = [
   { label: 'Clientes', icon: '👤', path: '/clients' },
@@ -16,9 +17,8 @@ const menuItems = [
 
 export default function RegisterSupplierPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { user, logout } = useAuth();
-  const { darkMode, toggleTheme } = useTheme();
+  const { logout } = useAuth();
+  const { darkMode } = useTheme();
 
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -122,51 +122,8 @@ export default function RegisterSupplierPage() {
   }
 
   return (
-    <div className={`flex min-h-screen transition-colors duration-500 ${dark ? 'bg-[#0a0a0a] text-white' : 'bg-[#f0f0f0] text-[#111]'}`}>
-      <aside className={`w-56 flex flex-col justify-between py-6 px-4 border-r transition-colors duration-500 ${dark ? 'bg-[#0f0f0f] border-white/5' : 'bg-white border-black/10'}`}>
-        <div className="flex flex-col gap-6">
-          <div className={`flex flex-col items-center gap-2 pb-4 border-b ${dark ? 'border-white/5' : 'border-black/10'}`}>
-            <img
-              src="/brioboxlogo.png"
-              alt="BrioBox"
-              className={`w-12 h-12 object-contain ${dark ? 'drop-shadow-[0_0_10px_rgba(180,0,0,0.4)]' : ''}`}
-            />
-            <div className="text-center">
-              <p className={`font-bold text-sm tracking-widest uppercase ${dark ? 'text-white' : 'text-[#111]'}`}>BrioBox</p>
-              <p className={`text-[9px] tracking-widest uppercase ${dark ? 'text-white/30' : 'text-black/40'}`}>Gym Management</p>
-            </div>
-          </div>
-
-          <nav className="flex flex-col gap-1">
-            {menuItems.map(item => (
-              <button
-                key={item.label}
-                onClick={() => navigate(item.path)}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs tracking-wide transition-all text-left ${isActiveRoute(item.path)
-                  ? dark
-                    ? 'bg-red-900/30 text-red-400 border border-red-900/30'
-                    : 'bg-red-100 text-red-700 border border-red-200'
-                  : dark
-                    ? 'text-white/40 hover:text-white/70 hover:bg-white/5'
-                    : 'text-black/50 hover:text-black/80 hover:bg-black/5'
-                }`}
-              >
-                <span className="text-base">{item.icon}</span>
-                {item.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        <button
-          onClick={handleLogout}
-          disabled={loggingOut}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs tracking-wide transition-all ${dark ? 'text-white/30 hover:text-red-500 hover:bg-red-950/20' : 'text-black/40 hover:text-red-600 hover:bg-red-50'}`}
-        >
-          <span>{loggingOut ? '⏳' : '🚪'}</span>
-          {loggingOut ? 'Cerrando sesión...' : 'Logout'}
-        </button>
-      </aside>
+    <div className={`flex flex-col min-h-screen transition-colors duration-500 ${dark ? 'bg-[#0a0a0a] text-white' : 'bg-[#f0f0f0] text-[#111]'}`}>
+      <Navbar onLogout={handleLogout} />
 
       <main className="flex-1 flex flex-col relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#1a0000_0%,_#050000_35%,_#000000_65%)]" />
@@ -177,42 +134,15 @@ export default function RegisterSupplierPage() {
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-black/80 to-transparent pointer-events-none" />
         <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tl from-black/80 to-transparent pointer-events-none" />
 
-        <header className={`relative z-10 flex items-center justify-between px-8 py-4 border-b transition-colors duration-500 ${dark ? 'border-white/5' : 'border-black/10'}`}>
-          <div>
-            <p className={`text-[10px] tracking-widest uppercase mb-0.5 ${dark ? 'text-white/30' : 'text-black/40'}`}>
-              Inventory
-            </p>
-            <h1 className={`text-2xl font-bold tracking-wide ${dark ? 'text-white' : 'text-[#111]'}`}>
-              Registrar proveedor
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={toggleTheme}
-              className={`w-12 h-6 rounded-full relative transition-all duration-300 ${dark ? 'bg-red-900/60' : 'bg-black/20'}`}
-            >
-              <div className={`absolute top-1 w-4 h-4 rounded-full transition-all duration-300 flex items-center justify-center text-[8px] ${dark ? 'left-7 bg-red-500' : 'left-1 bg-white'}`}>
-                {dark ? '🌙' : '☀️'}
-              </div>
-            </button>
-
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm border transition-colors cursor-pointer ${dark ? 'border-white/10 text-white/50 hover:border-red-900/50 hover:text-red-400' : 'border-black/10 text-black/50'}`}>
-              🔔
-            </div>
-
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${dark ? 'border-white/5 bg-white/5 hover:border-red-900/30' : 'border-black/10 bg-black/5'}`}>
-              <img
-                src="/user.png"
-                alt="user"
-                className="w-6 h-6 rounded-full object-cover"
-              />
-              <span className={`text-xs tracking-wide ${dark ? 'text-white/60' : 'text-black/60'}`}>
-                {user?.name ?? 'Admin'} {user?.lastName ?? ''}
-              </span>
-            </div>
-          </div>
-        </header>
+        {/* Page header */}
+        <div className="relative z-10 px-8 pt-8 pb-4">
+          <p className={`text-[10px] tracking-widest uppercase mb-0.5 ${dark ? 'text-white/30' : 'text-black/40'}`}>
+            Inventory
+          </p>
+          <h1 className={`text-2xl font-bold tracking-wide ${dark ? 'text-white' : 'text-[#111]'}`}>
+            Registrar proveedor
+          </h1>
+        </div>
 
         <div className="relative z-10 flex-1 flex items-center justify-center p-8">
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-8 w-full max-w-2xl shadow-2xl flex flex-col gap-6">

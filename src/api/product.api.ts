@@ -18,6 +18,7 @@ export interface CreateProductPayload {
   price: number;
   stock: number;
   category: string;
+  supplier_id: number;
 }
 
 export interface UpdateProductPayload {
