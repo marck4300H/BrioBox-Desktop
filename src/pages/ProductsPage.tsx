@@ -30,6 +30,12 @@ export default function ProductsPage() {
   const [limit] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState<{
+  type: 'success' | 'error';
+  message: string;
+} | null>(null);
 
   const isActiveRoute = (path: string) => {
     if (path === '/products') {
@@ -98,6 +104,23 @@ export default function ProductsPage() {
       setApiError(err instanceof Error ? err.message : 'No se pudo actualizar el estado.');
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!deleteTarget) return;
+
+    setDeletingId(deleteTarget.id);
+
+    try {
+      await productApi.delete(deleteTarget.id);
+
+      setProducts(prev => prev.filter(product => product.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'No se pudo eliminar el producto.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -358,13 +381,40 @@ export default function ProductsPage() {
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-2">
                             <button
+                              onClick={() => navigate(`/products/${product.id}/edit`)}
+                              className={`px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider transition-colors ${
+                                dark
+                                  ? 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
+                                  : 'bg-black/5 text-black/60 hover:bg-black/10 hover:text-black'
+                              }`}
+                            >
+                              Editar
+                            </button>
+
+                            <button
+                              onClick={() => setDeleteTarget(product)}
+                              disabled={deletingId === product.id}
+                              className={`px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider transition-colors disabled:opacity-50 ${
+                                dark
+                                  ? 'bg-red-950/20 text-red-300 hover:bg-red-900/30 hover:text-red-200'
+                                  : 'bg-red-50 text-red-700 hover:bg-red-100'
+                              }`}
+                            >
+                              {deletingId === product.id ? 'Eliminando...' : 'Eliminar'}
+                            </button>
+
+                            <button
                               onClick={() => handleToggleStatus(product)}
                               disabled={updatingId === product.id}
-                              className={`px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider transition-colors ${
+                              className={`px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider transition-colors disabled:opacity-50 ${
                                 product.is_active
-                                  ? 'bg-white/5 text-white/60 hover:bg-red-950/20 hover:text-red-400'
-                                  : 'bg-red-950/20 text-red-300 hover:bg-red-900/30 hover:text-red-200'
-                              } disabled:opacity-50`}
+                                  ? dark
+                                    ? 'bg-white/5 text-white/60 hover:bg-red-950/20 hover:text-red-400'
+                                    : 'bg-black/5 text-black/60 hover:bg-red-50 hover:text-red-700'
+                                  : dark
+                                    ? 'bg-red-950/20 text-red-300 hover:bg-red-900/30 hover:text-red-200'
+                                    : 'bg-red-50 text-red-700 hover:bg-red-100'
+                              }`}
                             >
                               {updatingId === product.id
                                 ? 'Actualizando...'
@@ -406,6 +456,79 @@ export default function ProductsPage() {
           </div>
         </div>
       </main>
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => (deletingId ? null : setDeleteTarget(null))}
+          />
+
+          <div
+            className={`relative w-full max-w-md rounded-2xl border p-6 shadow-2xl ${
+              dark
+                ? 'bg-[#151515] border-white/10'
+                : 'bg-white border-black/10'
+            }`}
+          >
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-11 h-11 rounded-full flex items-center justify-center ${
+                    dark ? 'bg-red-950/30 text-red-300' : 'bg-red-50 text-red-700'
+                  }`}
+                >
+                  🗑️
+                </div>
+
+                <div>
+                  <h3 className={`text-lg font-semibold ${dark ? 'text-white' : 'text-black'}`}>
+                    Eliminar producto
+                  </h3>
+                  <p className={`text-xs tracking-wide ${dark ? 'text-white/40' : 'text-black/45'}`}>
+                    Esta acción cambiará el estado del producto.
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className={`rounded-xl px-4 py-3 text-sm ${
+                  dark ? 'bg-white/5 text-white/70' : 'bg-black/5 text-black/70'
+                }`}
+              >
+                ¿Deseas eliminar <span className="font-semibold">{deleteTarget.name}</span>?
+              </div>
+
+              <p className={`text-xs ${dark ? 'text-white/35' : 'text-black/45'}`}>
+                Podrás seguir controlando su visibilidad desde la lógica del backend si manejas borrado lógico.
+              </p>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={!!deletingId}
+                  className={`px-4 py-2 rounded-lg text-sm transition-colors disabled:opacity-50 ${
+                    dark
+                      ? 'bg-white/5 text-white/70 hover:bg-white/10'
+                      : 'bg-black/5 text-black/70 hover:bg-black/10'
+                  }`}
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDeleteProduct}
+                  disabled={!!deletingId}
+                  className="px-4 py-2 rounded-lg text-sm bg-[#cc0000] hover:bg-red-700 text-white transition-colors disabled:opacity-50"
+                >
+                  {deletingId ? 'Eliminando...' : 'Sí, eliminar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
