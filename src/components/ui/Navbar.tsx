@@ -5,7 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import ProfilePanel from './ProfilePanel';
 import { add, cashregister, customer, membership, products, provider, settings } from '../../assets/icons';
 
-const menuItems = [
+const baseMenuItems = [
   { label: 'Clientes', icon: customer, path: '/clients' },
   { label: 'Membresías', icon: membership, path: '/memberships' },
   { label: 'Cuadre de caja', icon: cashregister, path: '/cash' },
@@ -13,6 +13,10 @@ const menuItems = [
   { label: 'Productos', icon: products, path: '/products' },
   { label: 'Registrar Empleado', icon: add, path: '/register' },
   { label: 'Ajustes', icon: settings, path: '/settings' },
+];
+
+const adminMenuItems = [
+  { label: 'Empleados', icon: add, path: '/employees' },
 ];
 
 interface NavbarProps {
@@ -25,6 +29,10 @@ export default function Navbar({ onLogout }: NavbarProps) {
   const location = useLocation();
   const { darkMode, toggleTheme } = useTheme();
   const dark = darkMode;
+
+  const menuItems = user?.role === 'admin'
+    ? [...baseMenuItems, ...adminMenuItems]
+    : baseMenuItems;
 
   const [showProfile, setShowProfile] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -134,8 +142,7 @@ export default function Navbar({ onLogout }: NavbarProps) {
                 className={`w-3.5 h-3.5 object-contain flex-shrink-0 transition-all duration-200 ${active ? 'opacity-100' : 'opacity-40'
                   }`}
               />
-              <p className="text-[1.1rem] font-medium ">{item.label}</p>
-              {/* Active underline */}
+              <p className="text-[1.1rem] font-medium">{item.label}</p>
               {active && (
                 <span
                   className={`absolute bottom-0 left-0 right-0 h-[2px] ${dark ? 'bg-red-500' : 'bg-red-600'
