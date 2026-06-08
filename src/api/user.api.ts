@@ -1,5 +1,5 @@
 import { http } from './client';
-import type { User, UpdateUserPayload, ApiResponse } from '../types';
+import type { User, UpdateUserPayload, ApiResponse, Employee } from '../types';
 
 export interface ClientPayload {
   first_name: string;
@@ -48,4 +48,7 @@ export const userApi = {
 
   deleteClient: (id: string) =>
     http.delete<ApiResponse>(`/users/customer/${id}`),
+
+  getEmployees: () =>
+    http.get<{ success: boolean; users: Employee[] }>('/users/employees'),
 };
