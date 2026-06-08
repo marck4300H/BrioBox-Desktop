@@ -35,10 +35,8 @@ export default function RegisterProductPage() {
 
   const [form, setForm] = useState({
     name: '',
-    description: '',
     price: '',
     stock: '',
-    category: '',
     supplierId: '',
   });
 
@@ -98,7 +96,6 @@ export default function RegisterProductPage() {
     const newErrors: Record<string, string> = {};
 
     const name = form.name.trim();
-    const description = form.description.trim();
     const price = Number(form.price);
     const stock = Number(form.stock);
 
@@ -106,12 +103,6 @@ export default function RegisterProductPage() {
       newErrors.name = 'El nombre del producto es requerido.';
     } else if (name.length < 3) {
       newErrors.name = 'El nombre debe tener al menos 3 caracteres.';
-    }
-
-    if (!description) {
-      newErrors.description = 'La descripción es requerida.';
-    } else if (description.length < 5) {
-      newErrors.description = 'La descripción debe tener al menos 5 caracteres.';
     }
 
     if (form.price === '') {
@@ -124,10 +115,6 @@ export default function RegisterProductPage() {
       newErrors.stock = 'El stock es requerido.';
     } else if (Number.isNaN(stock) || stock < 0) {
       newErrors.stock = 'El stock no puede ser negativo.';
-    }
-
-    if (!form.category) {
-      newErrors.category = 'Selecciona una categoría.';
     }
 
     if (!form.supplierId) {
@@ -149,11 +136,10 @@ export default function RegisterProductPage() {
     try {
       await productApi.create({
         name: form.name.trim(),
-        description: form.description.trim(),
         price: Number(form.price),
         stock: Number(form.stock),
-        category: form.category,
-        supplier_id: Number(form.supplierId),});
+        supplier_id: Number(form.supplierId),
+      });
       setSuccess(true);
 
       setTimeout(() => {
@@ -313,28 +299,6 @@ export default function RegisterProductPage() {
 
                     <div className="flex flex-col gap-1">
                       <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/50'}`}>
-                        Descripción
-                      </label>
-                      <textarea
-                        name="description"
-                        value={form.description}
-                        onChange={handleChange}
-                        placeholder="Descripción breve del producto..."
-                        rows={3}
-                        disabled={loading}
-                        className={`rounded-lg px-4 py-2.5 text-sm transition-colors resize-none ${
-                          dark
-                            ? 'bg-[#111111] border border-[#2a2a2a] text-white placeholder-white/20 focus:outline-none focus:border-red-900/60'
-                            : 'bg-gray-50 border border-black/10 text-black placeholder-black/30 focus:outline-none focus:border-red-300'
-                        }`}
-                      />
-                      {errors.description && (
-                        <span className="text-red-500 text-[10px]">{errors.description}</span>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/50'}`}>
                         Proveedor
                       </label>
 
@@ -413,35 +377,6 @@ export default function RegisterProductPage() {
                         />
                         {errors.stock && <span className="text-red-500 text-[10px]">{errors.stock}</span>}
                       </div>
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/50'}`}>
-                        Categoría
-                      </label>
-                      <select
-                        name="category"
-                        value={form.category}
-                        onChange={handleChange}
-                        disabled={loading}
-                        className={`rounded-lg px-4 py-2.5 text-sm transition-colors appearance-none cursor-pointer ${
-                          dark
-                            ? 'bg-[#111111] border border-[#2a2a2a] text-white focus:outline-none focus:border-red-900/60'
-                            : 'bg-gray-50 border border-black/10 text-black focus:outline-none focus:border-red-300'
-                        }`}
-                      >
-                        <option value="" disabled>
-                          Selecciona una categoría
-                        </option>
-                        {CATEGORIES.map(cat => (
-                          <option key={cat} value={cat} className={dark ? 'bg-[#1a1a1a] text-white' : 'bg-white text-black'}>
-                            {cat}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.category && (
-                        <span className="text-red-500 text-[10px]">{errors.category}</span>
-                      )}
                     </div>
 
                     {apiError && (

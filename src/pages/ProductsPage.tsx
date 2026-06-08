@@ -60,8 +60,6 @@ export default function ProductsPage() {
     return products.filter(product =>
       [
         product.name,
-        product.description,
-        product.category,
         String(product.price),
         String(product.stock),
       ]
@@ -178,7 +176,7 @@ export default function ProductsPage() {
               <div className="w-full md:max-w-sm">
                 <input
                   type="text"
-                  placeholder="Buscar por nombre, categoría, descripción..."
+                  placeholder="Buscar por nombre"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   className={`w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-colors ${dark
@@ -240,15 +238,14 @@ export default function ProductsPage() {
               </div>
             ) : (
               <div className="overflow-x-auto rounded-xl border border-white/5">
-                <table className="w-full min-w-[900px] text-sm">
+                <table className="w-max min-w-full text-sm table-auto">
                   <thead className="bg-[#101010]">
                     <tr className="text-left text-white/40 uppercase tracking-widest text-[10px]">
-                      <th className="px-4 py-4">Producto</th>
-                      <th className="px-4 py-4">Categoría</th>
-                      <th className="px-4 py-4">Precio</th>
-                      <th className="px-4 py-4">Stock</th>
-                      <th className="px-4 py-4">Estado</th>
-                      <th className="px-4 py-4">Acciones</th>
+                      <th className="px-4 py-4 w-[280px]">Producto</th>
+                      <th className="px-4 py-4 w-[290px]">Precio</th>
+                      <th className="px-4 py-4 w-[290px]">Stock</th>
+                      <th className="px-4 py-4 w-[220px]">Estado</th>
+                      <th className="px-4 py-4 w-[30px]">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -260,13 +257,8 @@ export default function ProductsPage() {
                         <td className="px-4 py-4">
                           <div className="flex flex-col gap-1">
                             <span className="text-white font-medium">{product.name}</span>
-                            <span className="text-white/35 text-xs">
-                              {product.description}
-                            </span>
                           </div>
                         </td>
-
-                        <td className="px-4 py-4 text-white/70">{product.category}</td>
 
                         <td className="px-4 py-4 text-white font-medium">
                           {formatPrice(product.price)}

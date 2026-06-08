@@ -4,15 +4,6 @@ import { productApi } from '../api/product.api';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 
-const CATEGORIES = [
-  'Suplementos',
-  'Ropa deportiva',
-  'Accesorios',
-  'Equipos',
-  'Bebidas',
-  'Otros',
-];
-
 const menuItems = [
   { label: 'Clientes', icon: '👤', path: '/clients' },
   { label: 'Membresías', icon: '🎫', path: '/memberships' },
@@ -39,10 +30,8 @@ export default function EditProductPage() {
 
   const [form, setForm] = useState({
     name: '',
-    description: '',
     price: '',
     stock: '',
-    category: '',
   });
 
   const dark = darkMode;
@@ -84,10 +73,8 @@ export default function EditProductPage() {
 
         setForm({
           name: product.name ?? '',
-          description: product.description ?? '',
           price: String(product.price ?? ''),
           stock: String(product.stock ?? ''),
-          category: product.category ?? '',
         });
       } catch (err: unknown) {
         setApiError(err instanceof Error ? err.message : 'No se pudo cargar el producto.');
@@ -121,7 +108,6 @@ export default function EditProductPage() {
     const newErrors: Record<string, string> = {};
 
     const name = form.name.trim();
-    const description = form.description.trim();
     const price = Number(form.price);
     const stock = Number(form.stock);
 
@@ -129,12 +115,6 @@ export default function EditProductPage() {
       newErrors.name = 'El nombre del producto es requerido.';
     } else if (name.length < 3) {
       newErrors.name = 'El nombre debe tener al menos 3 caracteres.';
-    }
-
-    if (!description) {
-      newErrors.description = 'La descripción es requerida.';
-    } else if (description.length < 5) {
-      newErrors.description = 'La descripción debe tener al menos 5 caracteres.';
     }
 
     if (form.price === '') {
@@ -147,10 +127,6 @@ export default function EditProductPage() {
       newErrors.stock = 'El stock es requerido.';
     } else if (Number.isNaN(stock) || stock < 0) {
       newErrors.stock = 'El stock no puede ser negativo.';
-    }
-
-    if (!form.category) {
-      newErrors.category = 'Selecciona una categoría.';
     }
 
     setErrors(newErrors);
@@ -168,10 +144,8 @@ export default function EditProductPage() {
     try {
       await productApi.update(Number(id), {
         name: form.name.trim(),
-        description: form.description.trim(),
         price: Number(form.price),
         stock: Number(form.stock),
-        category: form.category,
       });
 
       setSuccess(true);
@@ -371,27 +345,6 @@ export default function EditProductPage() {
                       {errors.name && <span className="text-red-500 text-[10px]">{errors.name}</span>}
                     </div>
 
-                    <div className="flex flex-col gap-1">
-                      <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/50'}`}>
-                        Descripción
-                      </label>
-                      <textarea
-                        name="description"
-                        value={form.description}
-                        onChange={handleChange}
-                        rows={3}
-                        disabled={loading}
-                        className={`rounded-lg px-4 py-2.5 text-sm transition-colors resize-none ${
-                          dark
-                            ? 'bg-[#111111] border border-[#2a2a2a] text-white placeholder-white/20 focus:outline-none focus:border-red-900/60'
-                            : 'bg-gray-50 border border-black/10 text-black placeholder-black/30 focus:outline-none focus:border-red-300'
-                        }`}
-                      />
-                      {errors.description && (
-                        <span className="text-red-500 text-[10px]">{errors.description}</span>
-                      )}
-                    </div>
-
                     <div className="grid grid-cols-2 gap-3">
                       <div className="flex flex-col gap-1">
                         <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/50'}`}>
@@ -434,35 +387,6 @@ export default function EditProductPage() {
                         />
                         {errors.stock && <span className="text-red-500 text-[10px]">{errors.stock}</span>}
                       </div>
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/50'}`}>
-                        Categoría
-                      </label>
-                      <select
-                        name="category"
-                        value={form.category}
-                        onChange={handleChange}
-                        disabled={loading}
-                        className={`rounded-lg px-4 py-2.5 text-sm transition-colors appearance-none cursor-pointer ${
-                          dark
-                            ? 'bg-[#111111] border border-[#2a2a2a] text-white focus:outline-none focus:border-red-900/60'
-                            : 'bg-gray-50 border border-black/10 text-black focus:outline-none focus:border-red-300'
-                        }`}
-                      >
-                        <option value="" disabled>
-                          Selecciona una categoría
-                        </option>
-                        {CATEGORIES.map(cat => (
-                          <option key={cat} value={cat} className={dark ? 'bg-[#1a1a1a] text-white' : 'bg-white text-black'}>
-                            {cat}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.category && (
-                        <span className="text-red-500 text-[10px]">{errors.category}</span>
-                      )}
                     </div>
 
                     {apiError && (
