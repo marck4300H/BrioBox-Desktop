@@ -2,7 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
-import { membershipApi, type Membership, type MembershipPlan, type MembershipFreeze, type CreateFreezePayload } from '../api/membership.api';
+import {
+  membershipApi,
+  type Membership,
+  type MembershipPlan,
+  type MembershipFreeze,
+  type CreateFreezePayload,
+  type UpdateFreezePayload,
+} from '../api/membership.api';
 import { userApi, type Client } from '../api/user.api';
 import ProfilePanel from '../components/ui/ProfilePanel';
 
@@ -50,10 +57,19 @@ export default function MembershipsPage() {
   // Modal detalle membresía (freeze + cancel)
   const [selectedM, setSelectedM] = useState<Membership | null>(null);
   const [freezes, setFreezes] = useState<MembershipFreeze[]>([]);
+  const [freezeMap, setFreezeMap] = useState<Record<string, MembershipFreeze[]>>({});
   const [loadingFreezes, setLoadingFreezes] = useState(false);
   const [freezeForm, setFreezeForm] = useState({ start_date: '', end_date: '', is_indefinite: false });
   const [freezeError, setFreezeError] = useState('');
   const [freezeLoading, setFreezeLoading] = useState(false);
+
+  const [editingFreeze, setEditingFreeze] = useState<MembershipFreeze | null>(null);
+  const [editFreezeForm, setEditFreezeForm] = useState({
+    start_date: '',
+    end_date: '',
+    is_indefinite: false,
+  });
+  const [editFreezeLoading, setEditFreezeLoading] = useState(false);
 
   // — Planes —
   const [activePlans, setActivePlans] = useState<MembershipPlan[]>([]);
@@ -73,8 +89,36 @@ export default function MembershipsPage() {
 
   const fetchMemberships = async () => {
     setLoadingM(true);
-    try { const r = await membershipApi.getAll(); setMemberships(r.memberships); }
-    catch (e) { console.error(e); } finally { setLoadingM(false); }
+    try {
+      const r = await membershipApi.getAll();
+      setMemberships(r.memberships);
+
+      await Promise.all(
+        (r.memberships ?? []).map(m => fetchMembershipFreezes(String(m.id)))
+      );
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingM(false);
+    }
+  };
+
+  const fetchMembershipFreezes = async (membershipId: string) => {
+    try {
+      const r = await membershipApi.getFreezes(String(membershipId));
+
+      setFreezeMap(prev => ({
+        ...prev,
+        [String(membershipId)]: r.freezes ?? [],
+      }));
+    } catch (e) {
+      console.error(e);
+
+      setFreezeMap(prev => ({
+        ...prev,
+        [String(membershipId)]: [],
+      }));
+    }
   };
 
   const fetchClients = async () => {
@@ -109,11 +153,25 @@ export default function MembershipsPage() {
   };
 
   const openDetail = async (m: Membership) => {
-    setSelectedM(m); setFreezeError('');
+    setSelectedM(m);
+    setFreezeError('');
     setFreezeForm({ start_date: '', end_date: '', is_indefinite: false });
     setLoadingFreezes(true);
-    try { const r = await membershipApi.getFreezes(String(m.id)); setFreezes(r.freezes); }
-    catch (e) { console.error(e); setFreezes([]); } finally { setLoadingFreezes(false); }
+
+    try {
+      const r = await membershipApi.getFreezes(String(m.id));
+      setFreezes(r.freezes);
+
+      setFreezeMap(prev => ({
+        ...prev,
+        [String(m.id)]: r.freezes ?? [],
+      }));
+    } catch (e) {
+      console.error(e);
+      setFreezes([]);
+    } finally {
+      setLoadingFreezes(false);
+    }
   };
 
   const handleCancelM = async () => {
@@ -127,29 +185,146 @@ export default function MembershipsPage() {
 
   const handleCreateFreeze = async () => {
     if (!selectedM) return;
-    if (!freezeForm.start_date) { setFreezeError('La fecha de inicio es obligatoria.'); return; }
-    if (!freezeForm.is_indefinite && !freezeForm.end_date) { setFreezeError('La fecha de fin es obligatoria.'); return; }
+
+    if (!freezeForm.start_date) {
+      setFreezeError('La fecha de inicio es obligatoria.');
+      return;
+    }
+
+    if (!freezeForm.is_indefinite && !freezeForm.end_date) {
+      setFreezeError('La fecha de fin es obligatoria.');
+      return;
+    }
+
+    if (
+      !freezeForm.is_indefinite &&
+      freezeForm.end_date &&
+      freezeForm.end_date <= freezeForm.start_date
+    ) {
+      setFreezeError('La fecha de fin debe ser posterior a la fecha de inicio.');
+      return;
+    }
+
+    if (latestFreezeBlocksNew) {
+      setFreezeError('Debes descongelar o esperar a que finalice el último congelamiento antes de crear uno nuevo.');
+      return;
+    }
+
     setFreezeLoading(true);
+
     try {
       const payload: CreateFreezePayload = {
         start_date: freezeForm.start_date,
         is_indefinite: freezeForm.is_indefinite,
-        ...(freezeForm.is_indefinite ? {} : { end_date: freezeForm.end_date }),
+        ...(!freezeForm.is_indefinite ? { end_date: freezeForm.end_date } : {}),
       };
+
       await membershipApi.createFreeze(String(selectedM.id), payload);
+
       const r = await membershipApi.getFreezes(String(selectedM.id));
       setFreezes(r.freezes);
+
+      setFreezeMap(prev => ({
+        ...prev,
+        [String(selectedM.id)]: r.freezes ?? [],
+      }));
+
       setFreezeForm({ start_date: '', end_date: '', is_indefinite: false });
       setFreezeError('');
-    } catch (e: unknown) { setFreezeError(e instanceof Error ? e.message : 'Error al congelar.'); }
-    finally { setFreezeLoading(false); }
+    } catch (e: unknown) {
+      setFreezeError(e instanceof Error ? e.message : 'Error al congelar.');
+    } finally {
+      setFreezeLoading(false);
+    }
   };
 
   const handleCancelFreeze = async (freezeId: string) => {
     try {
       await membershipApi.cancelFreeze(freezeId);
-      if (selectedM) { const r = await membershipApi.getFreezes(String(selectedM.id)); setFreezes(r.freezes); }
-    } catch (e: unknown) { setFreezeError(e instanceof Error ? e.message : 'Error.'); }
+
+      if (selectedM) {
+        const r = await membershipApi.getFreezes(String(selectedM.id));
+        setFreezes(r.freezes);
+
+        setFreezeMap(prev => ({
+          ...prev,
+          [String(selectedM.id)]: r.freezes ?? [],
+        }));
+      }
+    } catch (e: unknown) {
+      setFreezeError(e instanceof Error ? e.message : 'Error.');
+    }
+  };
+
+  const handleUpdateFreeze = async () => {
+    if (!editingFreeze) return;
+
+    if (!editFreezeForm.start_date) {
+      setFreezeError('La fecha de inicio es obligatoria.');
+      return;
+    }
+
+    if (!editFreezeForm.is_indefinite && !editFreezeForm.end_date) {
+      setFreezeError('La fecha de fin es obligatoria.');
+      return;
+    }
+
+    if (
+      !editFreezeForm.is_indefinite &&
+      editFreezeForm.end_date &&
+      editFreezeForm.end_date <= editFreezeForm.start_date
+    ) {
+      setFreezeError('La fecha de fin debe ser posterior a la fecha de inicio.');
+      return;
+    }
+
+    const payload: UpdateFreezePayload = {};
+
+    if (toDateOnly(editingFreeze.start_date) !== editFreezeForm.start_date) {
+      payload.start_date = editFreezeForm.start_date;
+    }
+
+    if (editingFreeze.is_indefinite !== editFreezeForm.is_indefinite) {
+      payload.is_indefinite = editFreezeForm.is_indefinite;
+    }
+
+    if (!editFreezeForm.is_indefinite) {
+      if (toDateOnly(editingFreeze.end_date) !== editFreezeForm.end_date) {
+        payload.end_date = editFreezeForm.end_date;
+      }
+    }
+
+    if (Object.keys(payload).length === 0) {
+      setFreezeError('No hay cambios para guardar.');
+      return;
+    }
+
+    try {
+      setEditFreezeLoading(true);
+      setFreezeError('');
+
+      await membershipApi.updateFreeze(String(editingFreeze.id), payload);
+
+      if (selectedM) {
+        const r = await membershipApi.getFreezes(String(selectedM.id));
+        setFreezes(r.freezes);
+        setFreezeMap(prev => ({
+          ...prev,
+          [String(selectedM.id)]: r.freezes,
+        }));
+      }
+
+      setEditingFreeze(null);
+      setEditFreezeForm({
+        start_date: '',
+        end_date: '',
+        is_indefinite: false,
+      });
+    } catch (e: unknown) {
+      setFreezeError(e instanceof Error ? e.message : 'Error al actualizar el congelamiento.');
+    } finally {
+      setEditFreezeLoading(false);
+    }
   };
 
   const handleCreatePlan = async () => {
@@ -190,6 +365,152 @@ export default function MembershipsPage() {
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
   const daysLeft = (end: string) => Math.ceil((new Date(end).getTime() - Date.now()) / 86400000);
+  const toDateOnly = (value: string) => new Date(value).toISOString().slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10);
+
+  const getFreezeDisplayStatus = (freeze: MembershipFreeze) => {
+    const start = toDateOnly(freeze.start_date);
+    const end = toDateOnly(freeze.end_date);
+
+    if (freeze.is_active) {
+      if (freeze.is_indefinite && today >= start) {
+        return {
+          label: 'Congelada indefinida',
+          className: 'text-red-400',
+        };
+      }
+
+      if (today < start) {
+        return {
+          label: 'Próxima a congelarse',
+          className: 'text-yellow-400',
+        };
+      }
+
+      if (today >= start && today <= end) {
+        return {
+          label: 'Congelada',
+          className: 'text-red-400',
+        };
+      }
+    }
+
+    if (today < start) {
+      return {
+        label: 'Programado',
+        className: 'text-yellow-400',
+      };
+    }
+
+    return {
+      label: 'Descongelada',
+      className: dark ? 'text-white/30' : 'text-black/30',
+    };
+  };
+
+  const sortedFreezes = [...freezes].sort(
+    (a, b) =>
+      new Date(b.created_at ?? b.start_date).getTime() -
+      new Date(a.created_at ?? a.start_date).getTime()
+  );
+
+  const latestFreezeId = sortedFreezes[0]?.id ? String(sortedFreezes[0].id) : null;
+
+  const isLatestFreeze = (freeze: MembershipFreeze) =>
+    String(freeze.id) === latestFreezeId;
+
+  const canUnfreezeLatest = (freeze: MembershipFreeze) => {
+    if (!isLatestFreeze(freeze)) return false;
+    return freeze.is_active;
+  };
+
+  const canEditLatestFreeze = (freeze: MembershipFreeze) => {
+    if (!isLatestFreeze(freeze)) return false;
+    return freeze.is_active;
+  };
+
+  const latestFreeze = sortedFreezes[0] ?? null;
+
+  const latestFreezeStatus = latestFreeze
+    ? getFreezeDisplayStatus(latestFreeze)
+    : null;
+
+  const latestFreezeBlocksNew =
+    !!latestFreeze &&
+    latestFreeze.is_active &&
+    latestFreezeStatus !== null &&
+    (latestFreezeStatus.label === 'Congelada' ||
+      latestFreezeStatus.label === 'Congelada indefinida' ||
+      latestFreezeStatus.label === 'Próxima a congelarse' ||
+      latestFreezeStatus.label === 'Programado');
+
+  const getMembershipFreezeSummary = (membershipId: string) => {
+    const membershipFreezes = freezeMap[String(membershipId)] ?? [];
+
+    if (!membershipFreezes.length) {
+      return {
+        label: 'Sin congelamiento',
+        badge: dark
+          ? 'bg-white/5 text-white/40 border border-white/10'
+          : 'bg-black/5 text-black/40 border border-black/10',
+      };
+    }
+
+    const sorted = [...membershipFreezes].sort(
+      (a, b) =>
+        new Date(b.created_at ?? b.start_date).getTime() -
+        new Date(a.created_at ?? a.start_date).getTime()
+    );
+
+    const activeOrUpcoming = sorted.find(f => {
+      const start = toDateOnly(f.start_date);
+      const end = toDateOnly(f.end_date);
+
+      return (
+        f.is_active &&
+        ((f.is_indefinite && today >= start) ||
+          (today >= start && today <= end) ||
+          today < start)
+      );
+    });
+
+    if (!activeOrUpcoming) {
+      return {
+        label: 'Descongelada',
+        badge: 'bg-emerald-950/20 text-emerald-400 border border-emerald-900/30',
+      };
+    }
+
+    const start = toDateOnly(activeOrUpcoming.start_date);
+    const end = toDateOnly(activeOrUpcoming.end_date);
+
+    if (activeOrUpcoming.is_indefinite && today >= start) {
+      return {
+        label: 'Congelada indefinida',
+        badge: 'bg-red-950/20 text-red-300 border border-red-900/30',
+      };
+    }
+
+    if (today < start) {
+      return {
+        label: 'Próxima a congelarse',
+        badge: 'bg-yellow-950/20 text-yellow-300 border border-yellow-700/30',
+      };
+    }
+
+    if (today >= start && today <= end) {
+      return {
+        label: 'Congelada',
+        badge: 'bg-red-950/20 text-red-300 border border-red-900/30',
+      };
+    }
+
+    return {
+      label: 'Descongelada',
+      badge: 'bg-emerald-950/20 text-emerald-400 border border-emerald-900/30',
+    };
+  };
+  
   const filtered = memberships.filter(m => filter === 'todas' ? true : m.status === filter);
   const morosos = memberships.filter(m => m.status === 'activa' && daysLeft(m.end_date) <= 0);
   const clientMap = Object.fromEntries(clients.map(c => [String(c.id), `${c.first_name} ${c.paternal_last_name}`]));
@@ -321,45 +642,107 @@ export default function MembershipsPage() {
 
               {/* Tabla */}
               <div className={`rounded-xl border overflow-hidden ${dark ? 'border-white/5' : 'border-black/10'}`}>
-                <div className={`grid grid-cols-6 px-5 py-3 text-[10px] uppercase tracking-widest border-b ${dark ? 'bg-[#111] border-white/5 text-white/30' : 'bg-gray-50 border-black/10 text-black/40'}`}>
+                <div
+                  className={`grid grid-cols-7 px-5 py-3 text-[10px] uppercase tracking-widest border-b ${
+                    dark ? 'bg-[#111] border-white/5 text-white/30' : 'bg-gray-50 border-black/10 text-black/40'
+                  }`}
+                >
                   <span className="col-span-2">Cliente</span>
                   <span>Plan</span>
                   <span>Inicio</span>
                   <span>Vencimiento</span>
+                  <span>Congelamiento</span>
                   <span className="text-right">Estado / Acción</span>
                 </div>
+
                 {loadingM ? (
-                  <div className={`px-5 py-10 text-center text-xs tracking-widest uppercase animate-pulse ${dark ? 'text-white/20' : 'text-black/20'}`}>Cargando...</div>
+                  <div className={`px-5 py-10 text-center text-xs tracking-widest uppercase animate-pulse ${dark ? 'text-white/20' : 'text-black/20'}`}>
+                    Cargando...
+                  </div>
                 ) : filtered.length === 0 ? (
-                  <div className={`px-5 py-10 text-center text-xs tracking-widest uppercase ${dark ? 'text-white/15' : 'text-black/20'}`}>Sin membresías</div>
-                ) : filtered.map((m, i) => {
-                  const days = daysLeft(m.end_date);
-                  const style = STATUS_STYLES[m.status] ?? STATUS_STYLES.pendiente;
-                  return (
-                    <div key={m.id} className={`grid grid-cols-6 px-5 py-3.5 items-center border-b transition-colors ${dark ? `border-white/5 ${i % 2 === 0 ? 'bg-[#0f0f0f]' : 'bg-[#111]'} hover:bg-white/[0.02]` : `border-black/5 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100`}`}>
-                      <span className={`col-span-2 text-xs truncate ${dark ? 'text-white/70' : 'text-black/70'}`}>{clientMap[String(m.customer_id)] ?? String(m.customer_id)}</span>
-                      <span className={`text-xs truncate ${dark ? 'text-white/50' : 'text-black/50'}`}>{planMap[String(m.plan_id)] ?? String(m.plan_id)}</span>
-                      <span className={`text-xs ${dark ? 'text-white/40' : 'text-black/40'}`}>{formatDate(m.start_date)}</span>
-                      <div className="flex flex-col gap-0.5">
-                        <span className={`text-xs ${dark ? 'text-white/40' : 'text-black/40'}`}>{formatDate(m.end_date)}</span>
-                        {m.status === 'activa' && (
-                          <span className={`text-[10px] ${days <= 0 ? 'text-red-400' : days <= 7 ? 'text-red-400' : days <= 15 ? 'text-yellow-400' : dark ? 'text-white/20' : 'text-black/30'}`}>
-                            {days > 0 ? `${days}d restantes` : 'Vencida'}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-end gap-2">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 ${style.badge}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />{style.label}
+                  <div className={`px-5 py-10 text-center text-xs tracking-widest uppercase ${dark ? 'text-white/15' : 'text-black/20'}`}>
+                    Sin membresías
+                  </div>
+                ) : (
+                  filtered.map((m, i) => {
+                    const days = daysLeft(m.end_date);
+                    const style = STATUS_STYLES[m.status] ?? STATUS_STYLES.pendiente;
+                    const freezeSummary = getMembershipFreezeSummary(String(m.id));
+
+                    return (
+                      <div
+                        key={m.id}
+                        className={`grid grid-cols-7 px-5 py-3.5 items-center border-b transition-colors ${
+                          dark
+                            ? i % 2 === 0
+                              ? 'bg-[#0f0f0f] border-white/5'
+                              : 'bg-[#111] hover:bg-white/[0.02] border-white/5'
+                            : i % 2 === 0
+                            ? 'bg-white border-black/5'
+                            : 'bg-gray-50 hover:bg-gray-100 border-black/5'
+                        }`}
+                      >
+                        <span className={`col-span-2 text-xs truncate ${dark ? 'text-white/70' : 'text-black/70'}`}>
+                          {clientMap[String(m.customer_id)] ?? String(m.customer_id)}
                         </span>
-                        <button onClick={() => openDetail(m)}
-                          className={`text-[10px] px-2 py-1 rounded-lg border transition-colors ${dark ? 'border-white/10 text-white/40 hover:border-red-900/50 hover:text-red-400 hover:bg-red-950/10' : 'border-black/10 text-black/40 hover:border-red-300 hover:text-red-600'}`}>
-                          Gestionar
-                        </button>
+
+                        <span className={`text-xs truncate ${dark ? 'text-white/50' : 'text-black/50'}`}>
+                          {planMap[String(m.plan_id)] ?? String(m.plan_id)}
+                        </span>
+
+                        <span className={`text-xs ${dark ? 'text-white/40' : 'text-black/40'}`}>
+                          {formatDate(m.start_date)}
+                        </span>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className={`text-xs ${dark ? 'text-white/40' : 'text-black/40'}`}>
+                            {formatDate(m.end_date)}
+                          </span>
+
+                          {m.status === 'activa' && (
+                            <span
+                              className={`text-[10px] ${
+                                days <= 0
+                                  ? 'text-red-400'
+                                  : days <= 7
+                                  ? 'text-red-400'
+                                  : days <= 15
+                                  ? 'text-yellow-400'
+                                  : dark
+                                  ? 'text-white/20'
+                                  : 'text-black/30'
+                              }`}
+                            >
+                              {days > 0 ? `${days}d restantes` : 'Vencida'}
+                            </span>
+                          )}
+                        </div>
+
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full w-fit ${freezeSummary.badge}`}>
+                          {freezeSummary.label}
+                        </span>
+
+                        <div className="flex items-center justify-end gap-2">
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 ${style.badge}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+                            {style.label}
+                          </span>
+
+                          <button
+                            onClick={() => openDetail(m)}
+                            className={`text-[10px] px-2 py-1 rounded-lg border transition-colors ${
+                              dark
+                                ? 'border-white/10 text-white/40 hover:border-red-900/50 hover:text-red-400 hover:bg-red-950/10'
+                                : 'border-black/10 text-black/40 hover:border-red-300 hover:text-red-600'
+                            }`}
+                          >
+                            Gestionar
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
             </>
           )}
@@ -550,30 +933,83 @@ export default function MembershipsPage() {
                 <p className={`text-xs ${dark ? 'text-white/20' : 'text-black/30'}`}>Sin congelamientos registrados.</p>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {freezes.map(f => (
-                    <div key={f.id} className={`rounded-lg p-3 border flex items-center justify-between ${dark ? 'bg-[#0f0f0f] border-white/5' : 'bg-gray-50 border-black/5'}`}>
-                      <div>
-                        <p className={`text-xs ${dark ? 'text-white/60' : 'text-black/60'}`}>
-                          {f.is_indefinite ? 'Indefinido' : `${formatDate(String(f.start_date))} → ${formatDate(String(f.end_date))}`}
-                        </p>
-                        <span className={`text-[10px] ${f.is_active ? 'text-emerald-400' : dark ? 'text-white/20' : 'text-black/30'}`}>
-                          {f.is_active ? '● Activo' : '○ Inactivo'}
-                        </span>
+                  {sortedFreezes.map(f => {
+                    const freezeStatus = getFreezeDisplayStatus(f);
+                    const isLatest = isLatestFreeze(f);
+                    const canUnfreeze = canUnfreezeLatest(f);
+
+                    return (
+                      <div
+                        key={f.id}
+                        className={`rounded-lg p-3 border flex items-center justify-between ${
+                          dark ? 'bg-[#0f0f0f] border-white/5' : 'bg-gray-50 border-black/5'
+                        }`}
+                      >
+                        <div className="flex flex-col gap-1">
+                          <p className={`text-xs ${dark ? 'text-white/70' : 'text-black/70'}`}>
+                            {f.is_indefinite
+                              ? `Indefinido desde ${formatDate(String(f.start_date))}`
+                              : `${formatDate(String(f.start_date))} → ${formatDate(String(f.end_date))}`}
+                          </p>
+
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-[10px] ${freezeStatus.className}`}>
+                              {freezeStatus.label}
+                            </span>
+
+                            <span className={`text-[10px] ${dark ? 'text-white/20' : 'text-black/30'}`}>
+                              Creado: {formatDate(String(f.created_at ?? f.start_date))}
+                            </span>
+
+                            {isLatest && (
+                              <span
+                                className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                                  dark
+                                    ? 'border-white/10 text-white/40 bg-white/5'
+                                    : 'border-black/10 text-black/40 bg-black/[0.03]'
+                                }`}
+                              >
+                                Último registro
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {canUnfreeze && (
+                            <button
+                              onClick={() => handleCancelFreeze(String(f.id))}
+                              className={`text-[10px] px-2.5 py-1 rounded-lg border transition-colors ${
+                                dark
+                                  ? 'border-yellow-900/40 text-yellow-500/70 hover:bg-yellow-950/10'
+                                  : 'border-yellow-300 text-yellow-600 hover:bg-yellow-50'
+                              }`}
+                            >
+                              Descongelar
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      {f.is_active ? (
-                        <button onClick={() => handleCancelFreeze(String(f.id))}
-                          className={`text-[10px] px-2.5 py-1 rounded-lg border transition-colors ${dark ? 'border-yellow-900/40 text-yellow-500/70 hover:bg-yellow-950/10' : 'border-yellow-300 text-yellow-600'}`}>
-                          Descongelar
-                        </button>
-                      ) : null}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
 
+            {selectedM.status === 'activa' && latestFreezeBlocksNew && latestFreezeStatus && (
+              <div
+                className={`rounded-lg border px-3 py-2 text-xs ${
+                  dark
+                    ? 'bg-yellow-950/10 border-yellow-900/30 text-yellow-300'
+                    : 'bg-yellow-50 border-yellow-200 text-yellow-700'
+                }`}
+              >
+                No puedes crear un nuevo congelamiento porque el último registro aún está en estado "{latestFreezeStatus.label}".
+              </div>
+            )}
+
             {/* Nuevo congelamiento */}
-            {selectedM.status === 'activa' && (
+            {selectedM.status === 'activa' && !latestFreezeBlocksNew && (
               <>
                 <div className={`w-full h-px ${dark ? 'bg-white/5' : 'bg-black/10'}`} />
                 <p className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/30' : 'text-black/40'}`}>Nuevo congelamiento</p>
@@ -605,6 +1041,107 @@ export default function MembershipsPage() {
                   {freezeLoading ? 'Congelando...' : 'Congelar membresía →'}
                 </button>
               </>
+            )}
+
+            {editingFreeze && (
+              <div
+                className={`mt-4 rounded-xl border p-4 flex flex-col gap-3 ${
+                  dark ? 'bg-[#0f0f0f] border-white/5' : 'bg-gray-50 border-black/10'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <p className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/30' : 'text-black/40'}`}>
+                    Editar congelamiento
+                  </p>
+
+                  <button
+                    onClick={() => {
+                      setEditingFreeze(null);
+                      setEditFreezeForm({
+                        start_date: '',
+                        end_date: '',
+                        is_indefinite: false,
+                      });
+                      setFreezeError('');
+                    }}
+                    className={`text-[10px] px-2 py-1 rounded-lg border ${
+                      dark ? 'border-white/10 text-white/40' : 'border-black/10 text-black/40'
+                    }`}
+                  >
+                    Cerrar
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/40'}`}>
+                      Fecha inicio
+                    </label>
+                    <input
+                      type="date"
+                      value={editFreezeForm.start_date}
+                      onChange={e =>
+                        setEditFreezeForm(p => ({
+                          ...p,
+                          start_date: e.target.value,
+                        }))
+                      }
+                      className={`rounded-lg px-3 py-2 text-sm outline-none border transition-colors ${
+                        dark
+                          ? 'bg-[#0f0f0f] border-white/5 text-white focus:border-red-900/60'
+                          : 'bg-gray-50 border-black/10 text-black'
+                      }`}
+                    />
+                  </div>
+
+                  {!editFreezeForm.is_indefinite && (
+                    <div className="flex flex-col gap-1">
+                      <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/40'}`}>
+                        Fecha fin
+                      </label>
+                      <input
+                        type="date"
+                        value={editFreezeForm.end_date}
+                        onChange={e =>
+                          setEditFreezeForm(p => ({
+                            ...p,
+                            end_date: e.target.value,
+                          }))
+                        }
+                        className={`rounded-lg px-3 py-2 text-sm outline-none border transition-colors ${
+                          dark
+                            ? 'bg-[#0f0f0f] border-white/5 text-white focus:border-red-900/60'
+                            : 'bg-gray-50 border-black/10 text-black'
+                        }`}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <label className={`flex items-center gap-2 text-xs cursor-pointer ${dark ? 'text-white/50' : 'text-black/50'}`}>
+                  <input
+                    type="checkbox"
+                    checked={editFreezeForm.is_indefinite}
+                    onChange={e =>
+                      setEditFreezeForm(p => ({
+                        ...p,
+                        is_indefinite: e.target.checked,
+                        end_date: '',
+                      }))
+                    }
+                    className="accent-red-600"
+                  />
+                  Congelamiento indefinido
+                </label>
+
+                <button
+                  onClick={handleUpdateFreeze}
+                  disabled={editFreezeLoading}
+                  className="w-full py-2.5 rounded-lg text-xs bg-[#cc0000] hover:bg-red-700 disabled:opacity-40 text-white font-semibold tracking-widest uppercase transition-colors"
+                >
+                  {editFreezeLoading ? 'Guardando...' : 'Guardar cambios del congelamiento'}
+                </button>
+              </div>
             )}
           </div>
         </div>

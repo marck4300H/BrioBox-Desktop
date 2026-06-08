@@ -23,8 +23,9 @@ export interface MembershipFreeze {
   start_date: string;
   end_date: string;
   is_indefinite: boolean;
-  is_active: boolean;
   created_by: string;
+  created_at: string;
+  is_active?: boolean;
 }
 
 export interface CreateMembershipPayload {
@@ -44,44 +45,78 @@ export interface CreateFreezePayload {
   is_indefinite?: boolean;
 }
 
+export interface UpdateFreezePayload {
+  start_date?: string;
+  end_date?: string;
+  is_indefinite?: boolean;
+}
+
 export const membershipApi = {
-  // Membresías
   create: (payload: CreateMembershipPayload) =>
     http.post<{ success: boolean; membership: Membership }>('/memberships/customers', payload),
+
   getAll: () =>
     http.get<{ success: boolean; memberships: Membership[] }>('/memberships/customers'),
+
   getActive: () =>
     http.get<{ success: boolean; memberships: Membership[] }>('/memberships/customers/active'),
+
   getPending: () =>
     http.get<{ success: boolean; memberships: Membership[] }>('/memberships/customers/pending'),
+
   getById: (id: string) =>
     http.get<{ success: boolean; membership: Membership }>(`/memberships/customers/${id}`),
+
   cancel: (id: string) =>
     http.put<{ success: boolean; membership: Membership }>(`/memberships/customers/cancel/${id}`, {}),
 
-  // Planes
   getActivePlans: () =>
     http.get<{ success: boolean; plans: MembershipPlan[] }>('/memberships/plans/active'),
+
   getDisabledPlans: () =>
     http.get<{ success: boolean; plans: MembershipPlan[] }>('/memberships/plans/disabled'),
+
   getPlanById: (id: string) =>
     http.get<{ success: boolean; plan: MembershipPlan }>(`/memberships/plans/${id}`),
+
   createPlan: (payload: CreatePlanPayload) =>
     http.post<{ success: boolean; plan: MembershipPlan }>('/memberships/plans', payload),
+
   updatePlan: (id: string, payload: Partial<CreatePlanPayload>) =>
     http.put<{ success: boolean; plan: MembershipPlan }>(`/memberships/plans/${id}`, payload),
+
   activatePlan: (id: string) =>
     http.put<{ success: boolean; plan: MembershipPlan }>(`/memberships/plans/activate/${id}`, {}),
+
   deactivatePlan: (id: string) =>
     http.put<{ success: boolean; plan: MembershipPlan }>(`/memberships/plans/deactivate/${id}`, {}),
 
-  // Congelamientos
   createFreeze: (membershipId: string, payload: CreateFreezePayload) =>
-    http.post<{ success: boolean; freeze: MembershipFreeze }>(`/memberships/freezes/${membershipId}`, payload),
+    http.post<{ success: boolean; message: string; freeze: MembershipFreeze }>(
+      `/memberships/freezes/${membershipId}`,
+      payload
+    ),
+
   getFreezes: (membershipId: string) =>
-    http.get<{ success: boolean; freezes: MembershipFreeze[] }>(`/memberships/freezes/${membershipId}`),
+    http.get<{ success: boolean; freezes: MembershipFreeze[] }>(
+      `/memberships/freezes/${membershipId}`
+    ),
+
+  updateFreeze: (freezeId: string, payload: UpdateFreezePayload) =>
+    http.put<{ success: boolean; message: string; freeze: MembershipFreeze }>(
+      `/memberships/freezes/${freezeId}`,
+      payload
+    ),
+
   cancelFreeze: (freezeId: string) =>
-    http.put<{ success: boolean; freeze: MembershipFreeze }>(`/memberships/freeze/cancel/${freezeId}`, {}),
+    http.put<{ success: boolean; message: string; freeze: MembershipFreeze }>(
+      `/memberships/freeze/cancel/${freezeId}`,
+      {}
+    ),
+
   activateFreeze: (freezeId: string) =>
-    http.put<{ success: boolean; freeze: MembershipFreeze }>(`/memberships/freeze/activate/${freezeId}`, {}),
+    http.put<{ success: boolean; message: string; freeze: MembershipFreeze }>(
+      `/memberships/freeze/activate/${freezeId}`,
+      {}
+    ),
 };
