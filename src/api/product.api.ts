@@ -5,10 +5,8 @@ export type PaymentMethod = 'efectivo' | 'transferencia' | 'tarjeta' | 'otro';
 export interface Product {
   id: number;
   name: string;
-  description: string;
   price: number;
   stock: number;
-  category: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -16,18 +14,15 @@ export interface Product {
 
 export interface CreateProductPayload {
   name: string;
-  description: string;
   price: number;
   stock: number;
-  category: string;
+  supplier_id: number;
 }
 
 export interface UpdateProductPayload {
   name?: string;
-  description?: string;
   price?: number;
   stock?: number;
-  category?: string;
   is_active?: boolean;
 }
 
