@@ -1,5 +1,7 @@
 import { http } from './client';
 
+export type PaymentMethod = 'efectivo' | 'transferencia' | 'tarjeta' | 'otro';
+
 export interface Product {
   id: number;
   name: string;
@@ -37,6 +39,31 @@ export interface GetProductsResponse {
   limit: number;
 }
 
+export interface SellProductPayload {
+  quantity: number;
+  payment_method: PaymentMethod;
+}
+
+export interface SellProductResponse {
+  success: boolean;
+  message: string;
+  product: Pick<Product, 'id' | 'name' | 'price' | 'stock' | 'is_active'>;
+  payment: {
+    id: number;
+    total_amount: number;
+    reference_type: string;
+    reference_id: number;
+  };
+  splits: { id: number; payment_method: PaymentMethod; amount: number }[];
+  movement: {
+    id: number;
+    session_id: number;
+    movement_type: string;
+    amount: number;
+    description: string;
+  };
+}
+
 export const productApi = {
   getAll: (page = 1, limit = 50) =>
     http.get<GetProductsResponse>(`/products?page=${page}&limit=${limit}`),
@@ -55,4 +82,7 @@ export const productApi = {
 
   toggleStatus: (id: number, is_active: boolean) =>
     http.put<{ success: boolean; product: Product; message?: string }>(`/products/${id}`, { is_active }),
+
+  sell: (id: number, payload: SellProductPayload) =>
+    http.post<SellProductResponse>(`/products/${id}/sell`, payload),
 };
