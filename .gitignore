@@ -27,3 +27,8 @@ dist-ssr
 dist-electron/
 dist/
 release/
+
+# DONT PUSH DLLS 
+
+resources/*.dll
+
