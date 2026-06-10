@@ -1,38 +1,21 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { supplierApi, type Supplier } from '../api/supplier.api';
 import Navbar from '../components/ui/Navbar';
 
-const mockSuppliers = [
-  {
-    id: 1,
-    name: 'Distribuciones Fitness SAS',
-    nit: '900123456-1',
-    phone: '3104567890',
-    email: 'contacto@fitnesssas.com',
-    products: 12,
-    status: 'Activo',
-  },
-  {
-    id: 2,
-    name: 'Suplementos del Valle',
-    nit: '901987654-2',
-    phone: '3152223344',
-    email: 'ventas@suplementosvalle.com',
-    products: 8,
-    status: 'Activo',
-  },
-  {
-    id: 3,
-    name: 'Importadora Power Gym',
-    nit: '800456123-9',
-    phone: '3009988776',
-    email: 'admin@powergym.com',
-    products: 5,
-    status: 'Pendiente',
-  },
+
+const menuItems = [
+  { label: 'Clientes', icon: '👤', path: '/clients' },
+  { label: 'Membresías', icon: '🎫', path: '/memberships' },
+  { label: 'Cuadre de caja', icon: '💰', path: '/cash' },
+  { label: 'Proveedores', icon: '📦', path: '/suppliers' },
+  { label: 'Productos', icon: '🛍️', path: '/products' },
+  { label: 'Registrar Empleado', icon: '➕', path: '/register' },
+  { label: 'Ajustes', icon: '⚙️', path: '/settings' },
 ];
+
 
 export default function SuppliersPage() {
   const navigate = useNavigate();
@@ -42,7 +25,63 @@ export default function SuppliersPage() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [search, setSearch] = useState('');
 
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    nit: '',
+    phone: '',
+    address: '',
+    is_active: true,
+  });
+
   const dark = darkMode;
+
+  const loadSuppliers = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const data = await supplierApi.list(page, limit);
+
+      setSuppliers(data.suppliers);
+      setTotal(data.count);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudieron cargar los proveedores');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSuppliers();
+  }, [page]);
+
+  const isActiveRoute = (path: string) => {
+    if (path === '/products') {
+      return location.pathname === '/products' || location.pathname === '/register-product';
+    }
+
+    if (path === '/clients') {
+      return location.pathname === '/clients' || location.pathname === '/register-client';
+    }
+
+    if (path === '/suppliers') {
+      return location.pathname === '/suppliers' || location.pathname === '/register-supplier';
+    }
+
+    return location.pathname === path;
+  };
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -51,12 +90,95 @@ export default function SuppliersPage() {
     navigate('/login');
   };
 
-  const filteredSuppliers = mockSuppliers.filter(supplier =>
-    [supplier.name, supplier.nit, supplier.phone, supplier.email]
-      .join(' ')
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+  const handleDelete = async (id: number) => {
+    const confirmed = window.confirm('¿Deseas desactivar este proveedor?');
+
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(id);
+      setError('');
+
+      await supplierApi.remove(id);
+      await loadSuppliers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar el proveedor');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const openEditModal = (supplier: Supplier) => {
+    setEditingSupplier(supplier);
+    setEditForm({
+      name: supplier.name,
+      email: supplier.email,
+      nit: supplier.nit,
+      phone: supplier.phone ?? '',
+      address: supplier.address,
+      is_active: supplier.is_active,
+    });
+  };
+
+  const closeEditModal = () => {
+    setEditingSupplier(null);
+    setEditForm({
+      name: '',
+      email: '',
+      nit: '',
+      phone: '',
+      address: '',
+      is_active: true,
+    });
+  };
+
+  const handleEditChange = (
+    field: keyof typeof editForm,
+    value: string | boolean
+  ) => {
+    setEditForm(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingSupplier) return;
+
+    try {
+      setEditSaving(true);
+      setError('');
+
+      await supplierApi.update(editingSupplier.id, {
+        name: editForm.name.trim(),
+        email: editForm.email.trim(),
+        nit: editForm.nit.trim(),
+        phone: editForm.phone.trim() || undefined,
+        address: editForm.address.trim(),
+        is_active: editForm.is_active,
+      });
+
+      await loadSuppliers();
+      closeEditModal();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo actualizar el proveedor');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const filteredSuppliers = useMemo(() => {
+    return suppliers.filter(supplier =>
+      [supplier.name, supplier.nit, supplier.phone ?? '', supplier.email, supplier.address]
+        .join(' ')
+        .toLowerCase()
+        .includes(search.toLowerCase())
+    );
+  }, [suppliers, search]);
+
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   if (loggingOut) {
     return (
@@ -110,9 +232,18 @@ export default function SuppliersPage() {
             </button>
           </div>
 
-          <div className={`bg-[#141414] border border-white/5 rounded-2xl p-5 flex flex-col gap-4 shadow-2xl ${
-            dark ? "bg-[#141414]" : "bg-[#f0f0f0]"
-          }`}>
+          <div className="bg-[#141414] border border-white/5 rounded-2xl p-5 flex flex-col gap-4 shadow-2xl">
+          {error && (
+            <div className="rounded-lg border border-red-900/40 bg-red-950/20 px-4 py-3 text-sm text-red-300">
+              {error}
+            </div>
+          )}
+
+          {loading && (
+            <div className="rounded-lg border border-white/5 bg-[#111111] px-4 py-3 text-sm text-white/60">
+              Cargando proveedores...
+            </div>
+          )}
             <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
               <div className={`w-full md:max-w-sm ${dark ? "bg-[#141414]" : "bg-[#f0f0f0]"}`}>
                 <input
@@ -137,14 +268,14 @@ export default function SuppliersPage() {
             <div className="overflow-x-auto rounded-xl border border-white/5">
               <table className="w-full min-w-[950px] text-sm">
                 <thead className="bg-[#101010]">
-                  <tr className={`text-left text-white/40 uppercase tracking-widest text-[10px] ${dark ? 'bg-[#111111] border border-[#2a2a2a] text-white placeholder-white/20 focus:border-red-900/60' : 'bg-gray-50 border border-black/10 text-[#111] placeholder-black/30 focus:border-red-400'}`}>
-                    <th className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>Proveedor</th>
-                    <th className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>NIT</th>
-                    <th className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>Teléfono</th>
-                    <th className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>Correo</th>
-                    <th className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>Productos</th>
-                    <th className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>Estado</th>
-                    <th className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>Acciones</th>
+                  <tr className="text-left text-white/40 uppercase tracking-widest text-[10px]">
+                    <th className="px-4 py-4">Proveedor</th>
+                    <th className="px-4 py-4">NIT</th>
+                    <th className="px-4 py-4">Teléfono</th>
+                    <th className="px-4 py-4">Correo</th>
+                    <th className="px-4 py-4">Dirección</th>
+                    <th className="px-4 py-4">Estado</th>
+                    <th className="px-4 py-4">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -153,46 +284,36 @@ export default function SuppliersPage() {
                       key={supplier.id}
                       className="border-t border-white/5 hover:bg-white/[0.02] transition-colors"
                     >
-                      <td className={`px-4 py-4 font-medium ${dark ? 'text-white' : 'text-[#111]'}`}>{supplier.name}</td>
-                      <td className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>{supplier.nit}</td>
-                      <td className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>{supplier.phone}</td>
-                      <td className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>{supplier.email}</td>
-                      <td className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}>{supplier.products}</td>
-                      <td className={`px-4 py-4 ${dark ? 'text-white' : 'text-[#111]'}`}> 
+                      <td className="px-4 py-4 text-white font-medium">{supplier.name}</td>
+                      <td className="px-4 py-4 text-white/70">{supplier.nit}</td>
+                      <td className="px-4 py-4 text-white/70">{supplier.phone ?? '—'}</td>
+                      <td className="px-4 py-4 text-white/70">{supplier.email}</td>
+                      <td className="px-4 py-4 text-white/70">{supplier.address}</td>
+                      <td className="px-4 py-4">
                         <span
                           className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${
-                            supplier.status === 'Activo'
-                              ? dark
-                                ? 'bg-green-950/20 text-green-400 border-green-900/30'
-                                : 'bg-green-50 text-green-700 border-green-200'
-                              : dark
-                                ? 'bg-yellow-950/20 text-yellow-300 border-yellow-700/30'
-                                : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                            supplier.is_active
+                              ? 'bg-green-950/20 text-green-400 border-green-900/30'
+                              : 'bg-yellow-950/20 text-yellow-300 border-yellow-700/30'
                           }`}
                         >
-                          {supplier.status}
+                          {supplier.is_active ? 'Activo' : 'Inactivo'}
                         </span>
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
                           <button
-                            className={`px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider transition-colors ${
-                              dark
-                                ? 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
-                                : 'bg-black/5 text-black/60 hover:bg-black/10 hover:text-black'
-                            }`}
+                            onClick={() => openEditModal(supplier)}
+                            className="px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider bg-white/5 text-white/60 hover:bg-white/10 transition-colors"
                           >
                             Editar
                           </button>
-
                           <button
-                            className={`px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider transition-colors ${
-                              dark
-                                ? 'bg-red-950/20 text-red-400 hover:bg-red-900/30'
-                                : 'bg-red-100 text-red-600 hover:bg-red-200'
-                            }`}
+                            onClick={() => handleDelete(supplier.id)}
+                            disabled={deletingId === supplier.id}
+                            className="px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider bg-red-950/20 text-red-300 hover:bg-red-900/30 transition-colors disabled:opacity-60"
                           >
-                            Eliminar
+                            {deletingId === supplier.id ? 'Eliminando...' : 'Eliminar'}
                           </button>
                         </div>
                       </td>
@@ -200,9 +321,152 @@ export default function SuppliersPage() {
                   ))}
                 </tbody>
               </table>
-            </div>  
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-xs uppercase tracking-widest text-white/30">
+                  Página {page} de {totalPages} · Total registros: {total}
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                    disabled={page === 1}
+                    className="px-3 py-2 rounded-lg border border-white/10 text-white/60 disabled:opacity-40"
+                  >
+                    Anterior
+                  </button>
+
+                  <button
+                    onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={page >= totalPages}
+                    className="px-3 py-2 rounded-lg border border-white/10 text-white/60 disabled:opacity-40"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+        {editingSupplier && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+            <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#141414] p-6 shadow-2xl">
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-white/30">
+                    Proveedores
+                  </p>
+                  <h3 className="text-xl font-bold text-white">
+                    Editar proveedor
+                  </h3>
+                </div>
+
+                <button
+                  onClick={closeEditModal}
+                  className="rounded-lg border border-white/10 px-3 py-2 text-sm text-white/60 hover:bg-white/5"
+                >
+                  Cerrar
+                </button>
+              </div>
+
+              <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-white/40 text-[10px] uppercase tracking-widest">
+                      Nombre
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.name}
+                      onChange={e => handleEditChange('name', e.target.value)}
+                      className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-white/40 text-[10px] uppercase tracking-widest">
+                      NIT
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.nit}
+                      onChange={e => handleEditChange('nit', e.target.value)}
+                      className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-red-900/60 transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-white/40 text-[10px] uppercase tracking-widest">
+                      Teléfono
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.phone}
+                      onChange={e => handleEditChange('phone', e.target.value)}
+                      className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-red-900/60 transition-colors"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-white/40 text-[10px] uppercase tracking-widest">
+                      Correo
+                    </label>
+                    <input
+                      type="email"
+                      value={editForm.email}
+                      onChange={e => handleEditChange('email', e.target.value)}
+                      className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-red-900/60 transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-white/40 text-[10px] uppercase tracking-widest">
+                    Dirección
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.address}
+                    onChange={e => handleEditChange('address', e.target.value)}
+                    className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-red-900/60 transition-colors"
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 rounded-lg border border-white/5 bg-[#111111] px-4 py-3">
+                  <input
+                    id="is_active"
+                    type="checkbox"
+                    checked={editForm.is_active}
+                    onChange={e => handleEditChange('is_active', e.target.checked)}
+                    className="h-4 w-4 accent-red-600"
+                  />
+                  <label htmlFor="is_active" className="text-sm text-white/70">
+                    Proveedor activo
+                  </label>
+                </div>
+
+                <div className="flex flex-col gap-3 pt-2 md:flex-row">
+                  <button
+                    type="submit"
+                    disabled={editSaving}
+                    className="w-full md:w-auto px-6 py-2.5 rounded-lg bg-[#cc0000] hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold tracking-widest text-sm uppercase transition-colors shadow-lg shadow-red-950/30"
+                  >
+                    {editSaving ? 'Guardando...' : 'Guardar cambios'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={closeEditModal}
+                    className="w-full md:w-auto px-6 py-2.5 rounded-lg border border-white/10 text-white/60 hover:text-white hover:border-red-900/40 hover:bg-white/5 transition-all text-sm uppercase tracking-widest"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -2,7 +2,18 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
+import { supplierApi } from '../api/supplier.api';
 import Navbar from '../components/ui/Navbar';
+
+const menuItems = [
+  { label: 'Clientes', icon: '👤', path: '/clients' },
+  { label: 'Membresías', icon: '🎫', path: '/memberships' },
+  { label: 'Cuadre de caja', icon: '💰', path: '/cash' },
+  { label: 'Proveedores', icon: '📦', path: '/suppliers' },
+  { label: 'Productos', icon: '🛍️', path: '/products' },
+  { label: 'Registrar Empleado', icon: '➕', path: '/register' },
+  { label: 'Ajustes', icon: '⚙️', path: '/settings' },
+];
 
 export default function RegisterSupplierPage() {
   const navigate = useNavigate();
@@ -11,7 +22,77 @@ export default function RegisterSupplierPage() {
 
   const [loggingOut, setLoggingOut] = useState(false);
 
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const [form, setForm] = useState({
+    name: '',
+    nit: '',
+    phone: '',
+    email: '',
+    address: '',
+  });
+
   const dark = darkMode;
+
+  const handleChange = (field: keyof typeof form, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!form.name.trim() || !form.nit.trim() || !form.email.trim() || !form.address.trim()) {
+      setError('Completa nombre, NIT, correo y dirección.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      await supplierApi.create({
+        name: form.name.trim(),
+        nit: form.nit.trim(),
+        email: form.email.trim(),
+        address: form.address.trim(),
+      });
+
+      setSuccess('Proveedor registrado correctamente.');
+
+      setForm({
+        name: '',
+        nit: '',
+        phone: '',
+        email: '',
+        address: '',
+      });
+
+      setTimeout(() => navigate('/suppliers'), 1200);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo registrar el proveedor');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const isActiveRoute = (path: string) => {
+    if (path === '/products') {
+      return location.pathname === '/products' || location.pathname === '/register-product';
+    }
+
+    if (path === '/clients') {
+      return location.pathname === '/clients' || location.pathname === '/register-client';
+    }
+
+    if (path === '/suppliers') {
+      return location.pathname === '/suppliers' || location.pathname === '/register-supplier';
+    }
+
+    return location.pathname === path;
+  };
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -79,7 +160,7 @@ export default function RegisterSupplierPage() {
 
             <div className="w-full h-px bg-red-900/30" />
 
-            <form className="w-full flex flex-col gap-5">
+            <form onSubmit={handleSubmit} className="w-full flex flex-col gap-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
                   <label className="text-white/40 text-[10px] uppercase tracking-widest">
@@ -88,6 +169,8 @@ export default function RegisterSupplierPage() {
                   <input
                     type="text"
                     placeholder="Distribuciones Fitness SAS"
+                    value={form.name}
+                    onChange={e => handleChange('name', e.target.value)}
                     className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors"
                   />
                 </div>
@@ -97,10 +180,12 @@ export default function RegisterSupplierPage() {
                     NIT
                   </label>
                   <input
-                    type="text"
-                    placeholder="900123456-1"
-                    className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors"
-                  />
+                  type="text"
+                  placeholder="900123456-1"
+                  value={form.nit}
+                  onChange={e => handleChange('nit', e.target.value)}
+                  className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors"
+                />
                 </div>
               </div>
 
@@ -112,6 +197,8 @@ export default function RegisterSupplierPage() {
                   <input
                     type="text"
                     placeholder="3104567890"
+                    value={form.phone}
+                    onChange={e => handleChange('phone', e.target.value)}
                     className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors"
                   />
                 </div>
@@ -123,10 +210,37 @@ export default function RegisterSupplierPage() {
                   <input
                     type="email"
                     placeholder="contacto@empresa.com"
+                    value={form.email}
+                    onChange={e => handleChange('email', e.target.value)}
                     className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors"
                   />
                 </div>
               </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-white/40 text-[10px] uppercase tracking-widest">
+                  Dirección
+                </label>
+                <input
+                  type="text"
+                  placeholder="Av. 6N # 23-45, Cali"
+                  value={form.address}
+                  onChange={e => handleChange('address', e.target.value)}
+                  className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors"
+                />
+              </div>
+
+              {error && (
+                <div className="rounded-lg border border-red-900/40 bg-red-950/20 px-4 py-3 text-sm text-red-300">
+                  {error}
+                </div>
+              )}
+
+              {success && (
+                <div className="rounded-lg border border-green-900/40 bg-green-950/20 px-4 py-3 text-sm text-green-300">
+                  {success}
+                </div>
+              )}
 
               <div className="rounded-xl border border-white/5 bg-[#111111] p-4 flex flex-col gap-2">
                 <p className="text-[10px] uppercase tracking-widest text-white/30">
@@ -155,10 +269,11 @@ export default function RegisterSupplierPage() {
 
               <div className="flex flex-col md:flex-row gap-3 pt-2">
                 <button
-                  type="button"
-                  className="w-full md:w-auto px-6 py-2.5 rounded-lg bg-[#cc0000] hover:bg-red-700 text-white font-semibold tracking-widest text-sm uppercase transition-colors shadow-lg shadow-red-950/30"
+                  type="submit"
+                  disabled={saving}
+                  className="w-full md:w-auto px-6 py-2.5 rounded-lg bg-[#cc0000] hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold tracking-widest text-sm uppercase transition-colors shadow-lg shadow-red-950/30"
                 >
-                  Guardar proveedor
+                  {saving ? 'Guardando...' : 'Guardar proveedor'}
                 </button>
 
                 <button

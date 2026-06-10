@@ -16,6 +16,7 @@ import CashRegisterPage from '../pages/CashRegisterPage';
 import SuppliersPage from '../pages/SuppliersPage';
 import RegisterSupplierPage from '../pages/RegisterSupplierPage';
 import KioskScreen from '../screens/KiosScreen';
+import EditProductPage from '../pages/EditProductPage';
 import EmployeesPage from '../pages/EmployeesPage';
 
 const initialRoute = window.location.hash === '#/kiosk' ? '/kiosk' : '/';
@@ -42,6 +43,7 @@ export function AppRouter() {
           <Route path="/memberships" element={<MembershipsPage />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/register-product" element={<RegisterProductPage />} />
+          <Route path="/products/:id/edit" element={<EditProductPage />} />
           <Route path="/cash" element={<CashRegisterPage />} />
           <Route path="/suppliers" element={<SuppliersPage />} />
           <Route path="/register-supplier" element={<RegisterSupplierPage />} />

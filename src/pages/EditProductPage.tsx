@@ -1,19 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { productApi } from '../api/product.api';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
-import { supplierApi } from '../api/supplier.api';
-import Navbar from '../components/ui/Navbar';
-
-const CATEGORIES = [
-  'Suplementos',
-  'Ropa deportiva',
-  'Accesorios',
-  'Equipos',
-  'Bebidas',
-  'Otros',
-];
 
 const menuItems = [
   { label: 'Clientes', icon: '👤', path: '/clients' },
@@ -25,28 +14,43 @@ const menuItems = [
   { label: 'Ajustes', icon: '⚙️', path: '/settings' },
 ];
 
-export default function RegisterProductPage() {
+export default function EditProductPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { id } = useParams<{ id: string }>();
   const { user, logout } = useAuth();
   const { darkMode, toggleTheme } = useTheme();
-  const dark = darkMode;
 
   const [loggingOut, setLoggingOut] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [form, setForm] = useState({
     name: '',
     price: '',
     stock: '',
-    supplierId: '',
   });
 
-  const [suppliers, setSuppliers] = useState<any[]>([]);
-  const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+  const dark = darkMode;
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [apiError, setApiError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const isActiveRoute = (path: string) => {
+    if (path === '/products') {
+      return (
+        location.pathname === '/products' ||
+        location.pathname === '/register-product' ||
+        location.pathname.includes('/products/')
+      );
+    }
+
+    if (path === '/clients') {
+      return location.pathname === '/clients' || location.pathname === '/register-client';
+    }
+
+    return location.pathname === path;
+  };
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -56,23 +60,31 @@ export default function RegisterProductPage() {
   };
 
   useEffect(() => {
-    fetchActiveSuppliers();
-  }, []);
+    const loadProduct = async () => {
+      if (!id) {
+        setApiError('No se encontró el identificador del producto.');
+        setInitialLoading(false);
+        return;
+      }
 
-  const fetchActiveSuppliers = async () => {
-    setLoadingSuppliers(true);
+      try {
+        const response = await productApi.getById(Number(id));
+        const product = response.product;
 
-    try {
-      const response = await supplierApi.list(1, 100);
-      setSuppliers((response.suppliers ?? []).filter(supplier => supplier.is_active));
-    } catch (err) {
-      console.error(err);
-      setSuppliers([]);
-      setApiError('No se pudieron cargar los proveedores activos.');
-    } finally {
-      setLoadingSuppliers(false);
-    }
-  };
+        setForm({
+          name: product.name ?? '',
+          price: String(product.price ?? ''),
+          stock: String(product.stock ?? ''),
+        });
+      } catch (err: unknown) {
+        setApiError(err instanceof Error ? err.message : 'No se pudo cargar el producto.');
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    void loadProduct();
+  }, [id]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -117,10 +129,6 @@ export default function RegisterProductPage() {
       newErrors.stock = 'El stock no puede ser negativo.';
     }
 
-    if (!form.supplierId) {
-      newErrors.supplierId = 'Selecciona un proveedor.';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -129,24 +137,24 @@ export default function RegisterProductPage() {
     e.preventDefault();
     setApiError('');
 
-    if (!validate()) return;
+    if (!id || !validate()) return;
 
     setLoading(true);
 
     try {
-      await productApi.create({
+      await productApi.update(Number(id), {
         name: form.name.trim(),
         price: Number(form.price),
         stock: Number(form.stock),
-        supplier_id: Number(form.supplierId),
       });
+
       setSuccess(true);
 
       setTimeout(() => {
         navigate('/products');
       }, 1800);
     } catch (err: unknown) {
-      setApiError(err instanceof Error ? err.message : 'Error al registrar producto.');
+      setApiError(err instanceof Error ? err.message : 'No se pudo actualizar el producto.');
     } finally {
       setLoading(false);
     }
@@ -173,17 +181,57 @@ export default function RegisterProductPage() {
   }
 
   return (
-    <div className={`flex flex-col min-h-screen transition-colors duration-500 ${dark ? 'bg-[#0a0a0a] text-white' : 'bg-[#f0f0f0] text-[#111]'}`}>
-      <Navbar onLogout={handleLogout} />
+    <div className={`flex min-h-screen transition-colors duration-500 ${dark ? 'bg-[#0a0a0a] text-white' : 'bg-[#f0f0f0] text-[#111]'}`}>
+      <aside className={`w-56 flex flex-col justify-between py-6 px-4 border-r transition-colors duration-500 ${dark ? 'bg-[#0f0f0f] border-white/5' : 'bg-white border-black/10'}`}>
+        <div className="flex flex-col gap-6">
+          <div className={`flex flex-col items-center gap-2 pb-4 border-b ${dark ? 'border-white/5' : 'border-black/10'}`}>
+            <img
+              src="/brioboxlogo.png"
+              alt="BrioBox"
+              className={`w-12 h-12 object-contain ${dark ? 'drop-shadow-[0_0_10px_rgba(180,0,0,0.4)]' : ''}`}
+            />
+            <div className="text-center">
+              <p className={`font-bold text-sm tracking-widest uppercase ${dark ? 'text-white' : 'text-[#111]'}`}>BrioBox</p>
+              <p className={`text-[9px] tracking-widest uppercase ${dark ? 'text-white/30' : 'text-black/40'}`}>Gym Management</p>
+            </div>
+          </div>
+
+          <nav className="flex flex-col gap-1">
+            {menuItems.map(item => (
+              <button
+                key={item.label}
+                onClick={() => navigate(item.path)}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs tracking-wide transition-all text-left ${
+                  isActiveRoute(item.path)
+                    ? dark
+                      ? 'bg-red-900/30 text-red-400 border border-red-900/30'
+                      : 'bg-red-100 text-red-700 border border-red-200'
+                    : dark
+                      ? 'text-white/40 hover:text-white/70 hover:bg-white/5'
+                      : 'text-black/50 hover:text-black/80 hover:bg-black/5'
+                }`}
+              >
+                <span className="text-base">{item.icon}</span>
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        <button
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs tracking-wide transition-all ${dark ? 'text-white/30 hover:text-red-500 hover:bg-red-950/20' : 'text-black/40 hover:text-red-600 hover:bg-red-50'}`}
+        >
+          <span>{loggingOut ? '⏳' : '🚪'}</span>
+          {loggingOut ? 'Cerrando sesión...' : 'Logout'}
+        </button>
+      </aside>
 
       <main className="flex-1 flex flex-col relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#1a0000_0%,_#050000_35%,_#000000_65%)]" />
         <div className="absolute w-[700px] h-[400px] rounded-full blur-[160px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-950/20 pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_20%,_rgba(0,0,0,0.7)_70%,_rgba(0,0,0,0.95)_100%)] pointer-events-none" />
-        <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-black/80 to-transparent pointer-events-none" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-black/80 to-transparent pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-black/80 to-transparent pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tl from-black/80 to-transparent pointer-events-none" />
 
         <header className={`relative z-10 flex items-center justify-between px-8 py-4 border-b transition-colors duration-500 ${dark ? 'border-white/5' : 'border-black/10'}`}>
           <div>
@@ -191,7 +239,7 @@ export default function RegisterProductPage() {
               Inventario
             </p>
             <h1 className={`text-2xl font-bold tracking-wide ${dark ? 'text-white' : 'text-[#111]'}`}>
-              Registrar producto
+              Editar producto
             </h1>
           </div>
 
@@ -236,7 +284,13 @@ export default function RegisterProductPage() {
             <div className={`rounded-2xl p-8 border shadow-2xl flex flex-col items-center gap-6 ${
               dark ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-white border-black/10'
             }`}>
-              {success ? (
+              {initialLoading ? (
+                <div className="flex flex-col items-center gap-4 py-10">
+                  <p className={`text-xs tracking-[0.4em] uppercase animate-pulse ${dark ? 'text-white/30' : 'text-black/35'}`}>
+                    Cargando producto...
+                  </p>
+                </div>
+              ) : success ? (
                 <div className="flex flex-col items-center gap-4 py-4">
                   <div className={`w-16 h-16 rounded-full border flex items-center justify-center ${
                     dark
@@ -248,16 +302,11 @@ export default function RegisterProductPage() {
                     </svg>
                   </div>
                   <h2 className={`text-xl font-bold tracking-wide ${dark ? 'text-white' : 'text-black'}`}>
-                    ¡Producto registrado!
+                    ¡Producto actualizado!
                   </h2>
                   <p className={`text-xs text-center tracking-wider ${dark ? 'text-white/30' : 'text-black/45'}`}>
                     Redirigiendo a productos...
                   </p>
-                  <div className="flex gap-1.5 items-center">
-                    <div className="w-1 h-1 rounded-full bg-red-500/80 animate-pulse" />
-                    <div className="w-8 h-px bg-red-500/40" />
-                    <div className="w-1 h-1 rounded-full bg-red-500/80 animate-pulse" />
-                  </div>
                 </div>
               ) : (
                 <>
@@ -268,10 +317,10 @@ export default function RegisterProductPage() {
                       className="w-14 h-14 object-contain drop-shadow-[0_0_15px_rgba(180,0,0,0.4)]"
                     />
                     <h2 className={`text-2xl font-bold tracking-wide ${dark ? 'text-white' : 'text-black'}`}>
-                      Nuevo Producto
+                      Editar Producto
                     </h2>
                     <p className={`text-xs text-center tracking-wider uppercase ${dark ? 'text-white/30' : 'text-black/45'}`}>
-                      Completa los datos del producto
+                      Modifica la información del producto
                     </p>
                   </div>
 
@@ -286,7 +335,6 @@ export default function RegisterProductPage() {
                         name="name"
                         value={form.name}
                         onChange={handleChange}
-                        placeholder="Proteína Whey 1kg"
                         disabled={loading}
                         className={`rounded-lg px-4 py-2.5 text-sm transition-colors ${
                           dark
@@ -295,42 +343,6 @@ export default function RegisterProductPage() {
                         }`}
                       />
                       {errors.name && <span className="text-red-500 text-[10px]">{errors.name}</span>}
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/50'}`}>
-                        Proveedor
-                      </label>
-
-                      <select
-                        name="supplierId"
-                        value={form.supplierId}
-                        onChange={handleChange}
-                        disabled={loading || loadingSuppliers}
-                        className={`rounded-lg px-4 py-2.5 text-sm transition-colors appearance-none cursor-pointer ${
-                          dark
-                            ? 'bg-[#111111] border border-[#2a2a2a] text-white focus:outline-none focus:border-red-900/60'
-                            : 'bg-gray-50 border border-black/10 text-black focus:outline-none focus:border-red-300'
-                        }`}
-                      >
-                        <option value="" disabled>
-                          {loadingSuppliers ? 'Cargando proveedores...' : 'Selecciona un proveedor'}
-                        </option>
-
-                        {suppliers.map((supplier) => (
-                          <option
-                            key={supplier.id}
-                            value={supplier.id}
-                            className={dark ? 'bg-[#1a1a1a] text-white' : 'bg-white text-black'}
-                          >
-                            {supplier.name}
-                          </option>
-                        ))}
-                      </select>
-
-                      {errors.supplierId && (
-                        <span className="text-red-500 text-[10px]">{errors.supplierId}</span>
-                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
@@ -345,7 +357,6 @@ export default function RegisterProductPage() {
                           step="1"
                           value={form.price}
                           onChange={handleChange}
-                          placeholder="50000"
                           disabled={loading}
                           className={`rounded-lg px-4 py-2.5 text-sm transition-colors ${
                             dark
@@ -367,7 +378,6 @@ export default function RegisterProductPage() {
                           step="1"
                           value={form.stock}
                           onChange={handleChange}
-                          placeholder="10"
                           disabled={loading}
                           className={`rounded-lg px-4 py-2.5 text-sm transition-colors ${
                             dark
@@ -394,7 +404,7 @@ export default function RegisterProductPage() {
                       disabled={loading}
                       className="w-full bg-[#cc0000] hover:bg-red-700 disabled:opacity-40 text-white font-semibold py-2.5 rounded-lg transition-colors mt-1 tracking-widest text-sm uppercase shadow-lg shadow-red-950/30"
                     >
-                      {loading ? 'Registrando...' : 'Registrar Producto →'}
+                      {loading ? 'Guardando cambios...' : 'Actualizar Producto →'}
                     </button>
                   </form>
                 </>
