@@ -1,5 +1,17 @@
 # React + TypeScript + Vite
 
+
+THIS DLLS MUST BE MANUALLY COPY ON RESOURCES:
+
+zkfp_wrapper.dll
+libzkfp.dll
+ZKFPCap.dll
+fpslib.dll
+libidfprcap.dll
+libsilkidcap.dll
+libzkfpmodulecap.dll
+libzklibcap.dll
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
