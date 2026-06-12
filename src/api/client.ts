@@ -1,6 +1,6 @@
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
 
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
 interface RequestOptions {
   method?: HttpMethod;
@@ -39,4 +39,5 @@ export const http = {
   post: <T>(endpoint: string, body?: unknown) => request<T>(endpoint, { method: 'POST', body }),
   put: <T>(endpoint: string, body?: unknown) => request<T>(endpoint, { method: 'PUT', body }),
   delete: <T>(endpoint: string) => request<T>(endpoint, { method: 'DELETE' }),
+  patch: <T>(endpoint: string, body?: unknown) => request<T>(endpoint, { method: 'PATCH', body }),
 };
