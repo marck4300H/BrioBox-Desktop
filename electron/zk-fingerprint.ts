@@ -59,7 +59,10 @@ let imageSize: number = 82944 // fallback, calculated when opening the device
 // ─── Exported functions ─────────────────────────────────────────────────────
  
 export function initReader(): { success: boolean; error?: string } {
+  console.log('=== ZK Init ===')
   const initResult = Wrap_Init()
+  console.log('Wrap_Init returned:', initResult)
+  
   if (initResult !== 0) return { success: false, error: `Init failed: ${initResult}` }
  
   const count = Wrap_GetDeviceCount()
@@ -68,12 +71,17 @@ export function initReader(): { success: boolean; error?: string } {
   deviceHandle = Wrap_OpenDevice(0)
   if (!deviceHandle) return { success: false, error: 'No se pudo abrir el dispositivo' }
  
-  // Get actual image size from device
-  const width = [0], height = [0], dpi = [0]
-  const paramsResult = Wrap_GetCaptureParamsEx(deviceHandle, width, height, dpi)
+  // Get actual image size from device using Node.js Buffers
+  const widthBuf = Buffer.alloc(4)
+  const heightBuf = Buffer.alloc(4)
+  const dpiBuf = Buffer.alloc(4)
+  const paramsResult = Wrap_GetCaptureParamsEx(deviceHandle, widthBuf, heightBuf, dpiBuf)
   if (paramsResult === 0) {
-    imageSize = width[0] * height[0]
-    console.log(`ZK Reader: ${width[0]}x${height[0]} @ ${dpi[0]}DPI — imageSize: ${imageSize}`)
+    const width = widthBuf.readInt32LE(0)
+    const height = heightBuf.readInt32LE(0)
+    const dpi = dpiBuf.readInt32LE(0)
+    imageSize = width * height
+    console.log(`ZK Reader: ${width}x${height} @ ${dpi}DPI — imageSize: ${imageSize}`)
   }
  
   dbHandle = Wrap_DBInit()
@@ -87,12 +95,14 @@ export function captureFingerprint(): { success: boolean; template?: Buffer; err
  
   const fpImage    = Buffer.alloc(imageSize)
   const fpTemplate = Buffer.alloc(MAX_TEMPLATE_SIZE)
-  const cbTemplate = [MAX_TEMPLATE_SIZE]
+  const cbTemplateBuf = Buffer.alloc(4)
+  cbTemplateBuf.writeUInt32LE(MAX_TEMPLATE_SIZE, 0)
  
-  const result = Wrap_AcquireFingerprint(deviceHandle, fpImage, imageSize, fpTemplate, cbTemplate)
+  const result = Wrap_AcquireFingerprint(deviceHandle, fpImage, imageSize, fpTemplate, cbTemplateBuf)
   if (result !== 0) return { success: false, error: `Captura falló: ${result}` }
  
-  return { success: true, template: fpTemplate.subarray(0, cbTemplate[0]) }
+  const actualSize = cbTemplateBuf.readUInt32LE(0)
+  return { success: true, template: fpTemplate.subarray(0, actualSize) }
 }
  
 export function mergeTemplates(
@@ -101,12 +111,14 @@ export function mergeTemplates(
   if (!dbHandle) return { success: false, error: 'Cache no inicializada' }
  
   const merged   = Buffer.alloc(MAX_TEMPLATE_SIZE)
-  const cbMerged = [MAX_TEMPLATE_SIZE]
+  const cbMergedBuf = Buffer.alloc(4)
+  cbMergedBuf.writeUInt32LE(MAX_TEMPLATE_SIZE, 0)
  
-  const result = Wrap_DBMerge(dbHandle, t1, t2, t3, merged, cbMerged)
+  const result = Wrap_DBMerge(dbHandle, t1, t2, t3, merged, cbMergedBuf)
   if (result !== 0) return { success: false, error: `Merge falló: ${result}` }
  
-  return { success: true, mergedTemplate: merged.subarray(0, cbMerged[0]) }
+  const actualSize = cbMergedBuf.readUInt32LE(0)
+  return { success: true, mergedTemplate: merged.subarray(0, actualSize) }
 }
  
 export function addToCache(fid: number, template: Buffer): { success: boolean; error?: string } {
@@ -135,13 +147,13 @@ export function identifyFingerprint(
 ): { success: boolean; fid?: number; score?: number; error?: string } {
   if (!dbHandle) return { success: false, error: 'Cache no inicializada' }
  
-  const fid   = [0]
-  const score = [0]
+  const fidBuf   = Buffer.alloc(4)
+  const scoreBuf = Buffer.alloc(4)
  
-  const result = Wrap_DBIdentify(dbHandle, template, template.length, fid, score)
+  const result = Wrap_DBIdentify(dbHandle, template, template.length, fidBuf, scoreBuf)
   if (result !== 0) return { success: false, error: `Identify falló: ${result}` }
  
-  return { success: true, fid: fid[0], score: score[0] }
+  return { success: true, fid: fidBuf.readUInt32LE(0), score: scoreBuf.readUInt32LE(0) }
 }
  
 export function terminateReader(): void {
