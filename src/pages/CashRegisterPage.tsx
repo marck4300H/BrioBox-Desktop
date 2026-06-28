@@ -37,7 +37,6 @@ export default function CashRegisterPage() {
     notes: '',
   });
 
-  /** movementType added to support both ingreso and egreso */
   const [movementForm, setMovementForm] = useState({
     movementType: 'egreso' as 'ingreso' | 'egreso',
     amount: '',
@@ -71,61 +70,116 @@ export default function CashRegisterPage() {
     });
   };
 
-  const loadCurrentSession = async () => {
-  setLoadingCurrent(true);
-  setPageError('');
+  // ─────────────────────────────────────────────────────────────────────────────
+  // FIX 1 — helpers de normalización extraídos para no duplicar lógica
+  // ─────────────────────────────────────────────────────────────────────────────
 
-  try {
-    const response = await cashRegisterApi.getCurrent();
-    const payload = response?.data;
-
-    if (!payload || !payload.session) {
-      setCurrentSession(null);
-      setCloseForm(prev => ({ ...prev, closingBalance: '' }));
-      return;
-    }
-
+  /**
+   * Normalises a raw API payload into a consistent CurrentSessionState shape.
+   */
+  const buildSessionState = (payload: {
+    session: CashSession;
+    movements?: CashMovement[];
+    summary?: CashSummary;
+    totalIncome?: number;
+    totalExpense?: number;
+    expectedBalance?: number;
+    difference?: number | null;
+  }): CurrentSessionState => {
     const movements = Array.isArray(payload.movements) ? payload.movements : [];
 
-    /**
-     * The backend returns totalIncome, totalExpense, expectedBalance and difference
-     * directly on the data object. The summary field may not exist.
-     * We normalise both shapes into CashSummary here.
-     */
     const summary: CashSummary = payload.summary ?? {
       openingBalance: payload.session.opening_balance ?? 0,
       totalIncome: payload.totalIncome ?? 0,
       totalExpense: payload.totalExpense ?? 0,
-      expectedBalance: payload.expectedBalance ?? payload.session.opening_balance ?? 0,
+      expectedBalance:
+        payload.expectedBalance ?? payload.session.opening_balance ?? 0,
       closingBalance: payload.session.closing_balance ?? null,
       difference: payload.difference ?? null,
     };
 
-    setCurrentSession({
-      session: payload.session,
-      movements,
-      summary,
-    });
+    return { session: payload.session, movements, summary };
+  };
 
-    setCloseForm(prev => ({
-      ...prev,
-      closingBalance:
-        summary.expectedBalance != null ? String(summary.expectedBalance) : '',
-    }));
-  } catch (err: unknown) {
-    const message =
-      err instanceof Error ? err.message : 'Error al cargar la sesión de caja.';
+  /**
+   * Full reload: activates the loading spinner and replaces the whole session
+   * state. Use on mount, after opening and after closing the cash register.
+   */
+  const loadCurrentSession = async () => {
+    setLoadingCurrent(true);
+    setPageError('');
 
-    if (message.toLowerCase().includes('no hay ninguna sesión de caja abierta')) {
-      setCurrentSession(null);
-      setCloseForm(prev => ({ ...prev, closingBalance: '' }));
-    } else {
-      setPageError(message);
+    try {
+      const response = await cashRegisterApi.getCurrent();
+      const payload = response?.data;
+
+      if (!payload || !payload.session) {
+        setCurrentSession(null);
+        setCloseForm(prev => ({ ...prev, closingBalance: '' }));
+        return;
+      }
+
+      const state = buildSessionState(payload);
+      setCurrentSession(state);
+
+      setCloseForm(prev => ({
+        ...prev,
+        closingBalance:
+          state.summary.expectedBalance != null
+            ? String(state.summary.expectedBalance)
+            : '',
+      }));
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Error al cargar la sesión de caja.';
+
+      if (message.toLowerCase().includes('no hay ninguna sesión de caja abierta')) {
+        setCurrentSession(null);
+        setCloseForm(prev => ({ ...prev, closingBalance: '' }));
+      } else {
+        setPageError(message);
+      }
+    } finally {
+      setLoadingCurrent(false);
     }
-  } finally {
-    setLoadingCurrent(false);
-  }
-};
+  };
+
+  /**
+   * Partial update: fetches fresh data and updates only the summary cards and
+   * movements table without activating the loading spinner or remounting the view.
+   * Use this after registering a manual movement.
+   */
+  const refreshSummary = async () => {
+    try {
+      const response = await cashRegisterApi.getCurrent();
+      const payload = response?.data;
+
+      if (!payload || !payload.session) return;
+
+      const state = buildSessionState(payload);
+
+      setCurrentSession(prev => {
+        if (!prev) return state;
+        return {
+          session: prev.session,
+          movements: state.movements,
+          summary: state.summary,
+        };
+      });
+
+      setCloseForm(prev => ({
+        ...prev,
+        closingBalance:
+          state.summary.expectedBalance != null
+            ? String(state.summary.expectedBalance)
+            : prev.closingBalance,
+      }));
+    } catch {
+      // Silent — the movement form already shows its own error state.
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     loadCurrentSession();
@@ -174,6 +228,7 @@ export default function CashRegisterPage() {
   /**
    * Handles manual cash register movement creation.
    * Supports both ingreso and egreso based on movementForm.movementType.
+   * After success, only the summary cards and movements table are refreshed.
    */
   const handleCreateMovement = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -204,8 +259,9 @@ export default function CashRegisterPage() {
         description: movementForm.description.trim(),
       });
 
-      setMovementForm({ movementType: 'egreso', amount: '', description: '' });
-      await loadCurrentSession();
+      // FIX 1 — preserva el tipo seleccionado y usa refreshSummary en lugar de loadCurrentSession
+      setMovementForm({ movementType: movementForm.movementType, amount: '', description: '' });
+      await refreshSummary();
     } catch (err: unknown) {
       setMovementError(
         err instanceof Error ? err.message : 'No se pudo registrar el movimiento.'
@@ -215,6 +271,11 @@ export default function CashRegisterPage() {
     }
   };
 
+  /**
+   * Closes the active cash register session.
+   * Resets currentSession to null immediately so the UI transitions to the
+   * "no session" state without waiting for the follow-up fetch.
+   */
   const handleCloseCash = async (e: React.FormEvent) => {
     e.preventDefault();
     setCloseError('');
@@ -239,6 +300,10 @@ export default function CashRegisterPage() {
       });
 
       setCloseForm({ closingBalance: '', notes: '' });
+
+      // FIX 2 — reset inmediato para que React desmonte la vista de sesión activa
+      // antes de que termine el fetch de loadCurrentSession
+      setCurrentSession(null);
       await loadCurrentSession();
     } catch (err: unknown) {
       setCloseError(err instanceof Error ? err.message : 'No se pudo cerrar la caja.');
@@ -619,7 +684,6 @@ export default function CashRegisterPage() {
                     </div>
 
                     <form onSubmit={handleCreateMovement} className="flex flex-col gap-4">
-                      {/* Toggle ingreso / egreso */}
                       <div className="flex flex-col gap-1">
                         <label className="text-white/40 text-[10px] uppercase tracking-widest">
                           Tipo de movimiento
