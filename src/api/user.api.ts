@@ -53,7 +53,10 @@ export const userApi = {
     http.get<{ success: boolean; users: Employee[] }>('/users/employees'),
 
   saveClientFingerprint: (clientId: string, fingerprintTemplate: string) =>
-  http.patch<{ success: boolean; message: string }>(`/users/customer/${clientId}/fingerprint`, {
-    fingerprint_template: fingerprintTemplate,
-  }),
+    http.patch<{ success: boolean; message: string }>(`/users/customer/${clientId}/fingerprint`, {
+      fingerprint_template: fingerprintTemplate,
+    }),
+
+  getAllFingerprints: () =>
+    http.get<{ success: boolean; fingerprints: Array<{ id: number; fingerprint_template: string }> }>('/users/customers/fingerprints'),
 };

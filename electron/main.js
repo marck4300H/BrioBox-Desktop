@@ -9,7 +9,7 @@ try {
     execSync(`cd /d "${resourcesPath}"`);
 }
 catch { }
-import { initReader, captureFingerprint, mergeTemplates, addToCache, removeFromCache, clearCache, identifyFingerprint, terminateReader, grayscaleToPNG, } from './zk-fingerprint';
+import { initReader, captureFingerprint, pollFingerprint, mergeTemplates, addToCache, removeFromCache, clearCache, identifyFingerprint, terminateReader, grayscaleToPNG, } from './zk-fingerprint';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL'];
 let adminWindow = null;
@@ -35,6 +35,59 @@ function createAdminWindow(display) {
         adminWindow.loadFile(path.join(__dirname, '../dist/index.html'));
     }
 }
+let isPollingKiosk = false;
+async function startKioskPolling() {
+    if (isPollingKiosk)
+        return;
+    isPollingKiosk = true;
+    console.log('Bucle de lectura de huella para Kiosko INICIADO');
+    const apiUrl = process.env.VITE_API_URL || 'https://stayaway-briobox-server.onrender.com/api';
+    while (isPollingKiosk && kioskWindow && !kioskWindow.isDestroyed()) {
+        try {
+            const template = pollFingerprint();
+            if (template) {
+                const result = identifyFingerprint(template);
+                if (result.success && result.fid !== undefined && result.score !== undefined && result.score >= 50) {
+                    console.log(`Lector Kiosko: Huella identificada con FID ${result.fid} (Score: ${result.score})`);
+                    try {
+                        const apiRes = await fetch(`${apiUrl}/users/customer/${result.fid}`);
+                        if (apiRes.ok) {
+                            const resData = await apiRes.json();
+                            if (resData.success && resData.user) {
+                                const client = resData.user;
+                                const fullName = `${client.first_name} ${client.paternal_last_name}`;
+                                kioskWindow.webContents.send('fingerprint-detected', {
+                                    id: client.id,
+                                    name: fullName,
+                                    membershipType: client.membershipType || 'Activa',
+                                });
+                            }
+                        }
+                        else {
+                            console.warn(`Lector Kiosko: No se pudo obtener datos del cliente ${result.fid} de la API (status: ${apiRes.status})`);
+                        }
+                    }
+                    catch (err) {
+                        console.error('Lector Kiosko: Error consultando datos del cliente:', err);
+                    }
+                    // Esperar 4.5 segundos para que la UI del kiosko muestre el mensaje de éxito sin detectar la misma huella repetidamente
+                    await new Promise(resolve => setTimeout(resolve, 4500));
+                }
+                else {
+                    // Si detectó algo pero no coincide con la confianza mínima, espera brevemente
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+            }
+        }
+        catch (e) {
+            console.error('Lector Kiosko: Error en bucle de escaneo:', e);
+        }
+        // Espera regular para no consumir CPU
+        await new Promise(resolve => setTimeout(resolve, 300));
+    }
+    isPollingKiosk = false;
+    console.log('Bucle de lectura de huella para Kiosko DETENIDO');
+}
 function createKioskWindow(display) {
     const { x, y, width, height } = display.bounds;
     kioskWindow = new BrowserWindow({
@@ -57,6 +110,11 @@ function createKioskWindow(display) {
             hash: '/kiosk',
         });
     }
+    kioskWindow.on('closed', () => {
+        isPollingKiosk = false;
+        kioskWindow = null;
+    });
+    startKioskPolling();
 }
 // ─── App ready ────────────────────────────────────────────────────────────────
 app.whenReady().then(() => {
