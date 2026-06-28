@@ -148,20 +148,20 @@ app.whenReady().then(() => {
   const displays  = screen.getAllDisplays()
   const primary   = screen.getPrimaryDisplay()
   const secondary = displays.find(d => d.id !== primary.id)
- 
-  createAdminWindow(primary)
-  createKioskWindow(secondary ?? primary)
 
   console.log('arch:', process.arch)
   console.log('platform:', process.platform)
-  
-  // Initialize fingerprint reader
+
+  // Initialize fingerprint reader FIRST so deviceHandle is ready before the kiosk polling loop starts
   const zkInit = initReader()
   if (!zkInit.success) {
     console.warn('ZK Reader no disponible:', zkInit.error)
   } else {
     console.log('ZK Reader inicializado correctamente')
   }
+
+  createAdminWindow(primary)
+  createKioskWindow(secondary ?? primary)  // ← startKioskPolling() se llama aquí, el lector ya está listo
 })
  
 app.on('before-quit', () => {
