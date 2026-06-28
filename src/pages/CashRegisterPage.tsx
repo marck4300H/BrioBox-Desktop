@@ -36,10 +36,14 @@ export default function CashRegisterPage() {
     openingBalance: '',
     notes: '',
   });
+
+  /** movementType added to support both ingreso and egreso */
   const [movementForm, setMovementForm] = useState({
+    movementType: 'egreso' as 'ingreso' | 'egreso',
     amount: '',
     description: '',
   });
+
   const [closeForm, setCloseForm] = useState({
     closingBalance: '',
     notes: '',
@@ -68,63 +72,60 @@ export default function CashRegisterPage() {
   };
 
   const loadCurrentSession = async () => {
-    setLoadingCurrent(true);
-    setPageError('');
+  setLoadingCurrent(true);
+  setPageError('');
 
-    try {
-      const response = await cashRegisterApi.getCurrent();
-      const payload = response?.data;
+  try {
+    const response = await cashRegisterApi.getCurrent();
+    const payload = response?.data;
 
-      if (!payload || !payload.session) {
-        setCurrentSession(null);
-        setCloseForm(prev => ({
-          ...prev,
-          closingBalance: '',
-        }));
-        return;
-      }
-
-      const movements = Array.isArray(payload.movements) ? payload.movements : [];
-
-      const summary = payload.summary ?? {
-        openingBalance: payload.session.opening_balance ?? 0,
-        totalIncome: 0,
-        totalExpense: 0,
-        expectedBalance: payload.session.opening_balance ?? 0,
-        closingBalance: payload.session.closing_balance ?? null,
-        difference: null,
-      };
-
-      setCurrentSession({
-        session: payload.session,
-        movements,
-        summary,
-      });
-
-      setCloseForm(prev => ({
-        ...prev,
-        closingBalance:
-          summary.expectedBalance != null
-            ? String(summary.expectedBalance)
-            : '',
-      }));
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Error al cargar la sesión de caja.';
-
-      if (message.toLowerCase().includes('no hay ninguna sesión de caja abierta')) {
-        setCurrentSession(null);
-        setCloseForm(prev => ({
-          ...prev,
-          closingBalance: '',
-        }));
-      } else {
-        setPageError(message);
-      }
-    } finally {
-      setLoadingCurrent(false);
+    if (!payload || !payload.session) {
+      setCurrentSession(null);
+      setCloseForm(prev => ({ ...prev, closingBalance: '' }));
+      return;
     }
-  };
+
+    const movements = Array.isArray(payload.movements) ? payload.movements : [];
+
+    /**
+     * The backend returns totalIncome, totalExpense, expectedBalance and difference
+     * directly on the data object. The summary field may not exist.
+     * We normalise both shapes into CashSummary here.
+     */
+    const summary: CashSummary = payload.summary ?? {
+      openingBalance: payload.session.opening_balance ?? 0,
+      totalIncome: payload.totalIncome ?? 0,
+      totalExpense: payload.totalExpense ?? 0,
+      expectedBalance: payload.expectedBalance ?? payload.session.opening_balance ?? 0,
+      closingBalance: payload.session.closing_balance ?? null,
+      difference: payload.difference ?? null,
+    };
+
+    setCurrentSession({
+      session: payload.session,
+      movements,
+      summary,
+    });
+
+    setCloseForm(prev => ({
+      ...prev,
+      closingBalance:
+        summary.expectedBalance != null ? String(summary.expectedBalance) : '',
+    }));
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : 'Error al cargar la sesión de caja.';
+
+    if (message.toLowerCase().includes('no hay ninguna sesión de caja abierta')) {
+      setCurrentSession(null);
+      setCloseForm(prev => ({ ...prev, closingBalance: '' }));
+    } else {
+      setPageError(message);
+    }
+  } finally {
+    setLoadingCurrent(false);
+  }
+};
 
   useEffect(() => {
     loadCurrentSession();
@@ -170,7 +171,11 @@ export default function CashRegisterPage() {
     }
   };
 
-  const handleCreateExpense = async (e: React.FormEvent) => {
+  /**
+   * Handles manual cash register movement creation.
+   * Supports both ingreso and egreso based on movementForm.movementType.
+   */
+  const handleCreateMovement = async (e: React.FormEvent) => {
     e.preventDefault();
     setMovementError('');
 
@@ -180,12 +185,12 @@ export default function CashRegisterPage() {
     }
 
     if (!movementForm.amount || Number(movementForm.amount) <= 0) {
-      setMovementError('El valor del egreso debe ser mayor a cero.');
+      setMovementError('El valor del movimiento debe ser mayor a cero.');
       return;
     }
 
     if (!movementForm.description.trim()) {
-      setMovementError('La descripción del egreso es obligatoria.');
+      setMovementError('La descripción del movimiento es obligatoria.');
       return;
     }
 
@@ -194,12 +199,12 @@ export default function CashRegisterPage() {
     try {
       await cashRegisterApi.createMovement({
         sessionId: currentSession.session.id,
-        movementType: 'egreso',
+        movementType: movementForm.movementType,
         amount: Number(movementForm.amount),
         description: movementForm.description.trim(),
       });
 
-      setMovementForm({ amount: '', description: '' });
+      setMovementForm({ movementType: 'egreso', amount: '', description: '' });
       await loadCurrentSession();
     } catch (err: unknown) {
       setMovementError(
@@ -332,7 +337,6 @@ export default function CashRegisterPage() {
           <div className="absolute w-[600px] h-[300px] rounded-full blur-[150px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-950/10 pointer-events-none" />
         )}
 
-        {/* Page header */}
         <div className="relative z-10 px-8 pt-8 pb-4">
           <p className={`text-[10px] tracking-widest uppercase mb-0.5 ${dark ? 'text-white/30' : 'text-black/40'}`}>
             Finance
@@ -432,7 +436,7 @@ export default function CashRegisterPage() {
                 </p>
                 <h3 className={dark ? 'text-xl font-bold text-white' : 'text-xl font-bold text-black'}>No hay caja abierta</h3>
                 <p className={`text-sm mt-1 ${dark ? 'text-white/40' : 'text-black/60'}`}>
-                  Para comenzar a registrar egresos y visualizar el resumen del día,
+                  Para comenzar a registrar movimientos y visualizar el resumen del día,
                   primero debes abrir una sesión de caja.
                 </p>
 
@@ -603,17 +607,53 @@ export default function CashRegisterPage() {
                 </div>
 
                 <div className="flex flex-col gap-6">
+                  {/* ── MOVEMENT FORM ── */}
                   <div className="bg-[#141414] border border-white/5 rounded-2xl p-6 shadow-2xl flex flex-col gap-4">
                     <div>
                       <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
-                        Egresos manuales
+                        Movimientos manuales
                       </p>
                       <h3 className="text-xl font-bold text-white">
-                        Registrar egreso
+                        Registrar movimiento
                       </h3>
                     </div>
 
-                    <form onSubmit={handleCreateExpense} className="flex flex-col gap-4">
+                    <form onSubmit={handleCreateMovement} className="flex flex-col gap-4">
+                      {/* Toggle ingreso / egreso */}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-white/40 text-[10px] uppercase tracking-widest">
+                          Tipo de movimiento
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setMovementForm(prev => ({ ...prev, movementType: 'ingreso' }))
+                            }
+                            className={`py-2.5 rounded-lg text-sm font-semibold tracking-wide transition-colors border ${
+                              movementForm.movementType === 'ingreso'
+                                ? 'bg-green-950/40 border-green-700/50 text-green-400'
+                                : 'bg-[#111111] border-[#2a2a2a] text-white/40 hover:text-white/70 hover:border-white/20'
+                            }`}
+                          >
+                            Ingreso
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setMovementForm(prev => ({ ...prev, movementType: 'egreso' }))
+                            }
+                            className={`py-2.5 rounded-lg text-sm font-semibold tracking-wide transition-colors border ${
+                              movementForm.movementType === 'egreso'
+                                ? 'bg-red-950/40 border-red-700/50 text-red-400'
+                                : 'bg-[#111111] border-[#2a2a2a] text-white/40 hover:text-white/70 hover:border-white/20'
+                            }`}
+                          >
+                            Egreso
+                          </button>
+                        </div>
+                      </div>
+
                       <div className="flex flex-col gap-1">
                         <label className="text-white/40 text-[10px] uppercase tracking-widest">
                           Monto
@@ -640,7 +680,11 @@ export default function CashRegisterPage() {
                           onChange={e =>
                             setMovementForm(prev => ({ ...prev, description: e.target.value }))
                           }
-                          placeholder="Compra implementos de limpieza"
+                          placeholder={
+                            movementForm.movementType === 'ingreso'
+                              ? 'Ingreso adicional de efectivo'
+                              : 'Compra implementos de limpieza'
+                          }
                           className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors resize-none"
                         />
                       </div>
@@ -654,13 +698,22 @@ export default function CashRegisterPage() {
                       <button
                         type="submit"
                         disabled={movementLoading}
-                        className="w-full bg-[#cc0000] hover:bg-red-700 disabled:opacity-40 text-white font-semibold py-2.5 rounded-lg transition-colors tracking-widest text-sm uppercase shadow-lg shadow-red-950/30"
+                        className={`w-full disabled:opacity-40 text-white font-semibold py-2.5 rounded-lg transition-colors tracking-widest text-sm uppercase shadow-lg ${
+                          movementForm.movementType === 'ingreso'
+                            ? 'bg-green-800 hover:bg-green-700 shadow-green-950/30'
+                            : 'bg-[#cc0000] hover:bg-red-700 shadow-red-950/30'
+                        }`}
                       >
-                        {movementLoading ? 'Guardando...' : 'Registrar egreso'}
+                        {movementLoading
+                          ? 'Guardando...'
+                          : movementForm.movementType === 'ingreso'
+                            ? 'Registrar ingreso'
+                            : 'Registrar egreso'}
                       </button>
                     </form>
                   </div>
 
+                  {/* ── CLOSE FORM ── */}
                   <div className="bg-[#141414] border border-white/5 rounded-2xl p-6 shadow-2xl flex flex-col gap-4">
                     <div>
                       <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">

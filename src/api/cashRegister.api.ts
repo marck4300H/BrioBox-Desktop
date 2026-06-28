@@ -35,7 +35,11 @@ export interface CurrentCashSessionResponse {
   success: boolean;
   data: {
     session: CashSession;
-    movements?: CashMovement[];
+    movements: CashMovement[];
+    totalIncome: number;
+    totalExpense: number;
+    expectedBalance: number;
+    difference: number | null;
     summary?: CashSummary;
   };
 }
