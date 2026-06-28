@@ -112,7 +112,7 @@ app.on('window-all-closed', () => {
  
 // Captures a fingerprint and returns the template in base64
 ipcMain.handle('zk:capture', async () => {
-  const result = captureFingerprint()
+  const result = await captureFingerprint()
   if (!result.success) return { success: false, error: result.error }
   
   let imageBase64: string | undefined = undefined
@@ -159,7 +159,7 @@ ipcMain.handle('zk:clearCache', async () => {
  
 // Captures + identifies in one step (kiosk flow)
 ipcMain.handle('zk:identify', async () => {
-  const capture = captureFingerprint()
+  const capture = await captureFingerprint()
   if (!capture.success) return { success: false, error: capture.error }
  
   const result = identifyFingerprint(capture.template!)

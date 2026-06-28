@@ -95,22 +95,31 @@ export function initReader(): { success: boolean; error?: string } {
   return { success: true }
 }
  
-export function captureFingerprint(): {
+export async function captureFingerprint(): Promise<{
   success: boolean
   template?: Buffer
   image?: Buffer
   imageWidth?: number
   imageHeight?: number
   error?: string
-} {
+}> {
   if (!deviceHandle) return { success: false, error: 'Lector no inicializado' }
 
   const fpImage    = Buffer.alloc(imageSize)
   const fpTemplate = Buffer.alloc(MAX_TEMPLATE_SIZE)
   const cbTemplateBuf = Buffer.alloc(4)
-  cbTemplateBuf.writeUInt32LE(MAX_TEMPLATE_SIZE, 0)
 
-  const result = Wrap_AcquireFingerprint(deviceHandle, fpImage, imageSize, fpTemplate, cbTemplateBuf)
+  let result = -1
+  
+  for (let attempt = 0; attempt < 10; attempt++) {
+    cbTemplateBuf.writeUInt32LE(MAX_TEMPLATE_SIZE, 0)
+    result = Wrap_AcquireFingerprint(deviceHandle, fpImage, imageSize, fpTemplate, cbTemplateBuf)
+    if (result === 0) {
+      break
+    }
+    await new Promise(resolve => setTimeout(resolve, 150))
+  }
+
   if (result !== 0) return { success: false, error: `Captura falló: ${result}` }
 
   const actualSize = cbTemplateBuf.readUInt32LE(0)

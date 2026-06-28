@@ -15,6 +15,7 @@ export default function RegisterClientPage() {
     finishRegistration,
     resetRegistration,
     imageBase64,
+    capturedTemplates,
   } = useFingerprint()
 
   const [step, setStep] = useState<Step>('form')
@@ -80,15 +81,16 @@ export default function RegisterClientPage() {
   }
 
   const handleCaptureStep = async () => {
-    const success = await captureOne()
-    if (!success) return 
+    const template = await captureOne()
+    if (!template) return 
 
-    if (scanStep + 1 >= 3) {
-      const template = await finishRegistration()
-      if (!template || !createdClientId) return
+    const newTemplates = [...capturedTemplates, template]
+    if (newTemplates.length >= 3) {
+      const merged = await finishRegistration(newTemplates)
+      if (!merged || !createdClientId) return
 
       try {
-        await userApi.saveClientFingerprint(createdClientId, template)
+        await userApi.saveClientFingerprint(createdClientId, merged)
         setFpSaved(true)
         setStep('done')
       } catch {
