@@ -20,6 +20,7 @@ import {
   clearCache,
   identifyFingerprint,
   terminateReader,
+  grayscaleToPNG,                       
 } from './zk-fingerprint'
  
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -86,7 +87,10 @@ app.whenReady().then(() => {
  
   createAdminWindow(primary)
   createKioskWindow(secondary ?? primary)
- 
+
+  console.log('arch:', process.arch)
+  console.log('platform:', process.platform)
+  
   // Initialize fingerprint reader
   const zkInit = initReader()
   if (!zkInit.success) {
@@ -110,7 +114,22 @@ app.on('window-all-closed', () => {
 ipcMain.handle('zk:capture', async () => {
   const result = captureFingerprint()
   if (!result.success) return { success: false, error: result.error }
-  return { success: true, template: result.template!.toString('base64') }
+  
+  let imageBase64: string | undefined = undefined
+  if (result.image && result.imageWidth && result.imageHeight) {
+    try {
+      const pngBuffer = grayscaleToPNG(result.image, result.imageWidth, result.imageHeight)
+      imageBase64 = pngBuffer.toString('base64')
+    } catch (err) {
+      console.error('Error al convertir huella a PNG:', err)
+    }
+  }
+
+  return { 
+    success: true, 
+    template: result.template!.toString('base64'),
+    imageBase64
+  }
 })
  
 // Merges 3 captured templates to generate the registration template

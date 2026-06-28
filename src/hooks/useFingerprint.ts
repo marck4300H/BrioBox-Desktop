@@ -1,80 +1,106 @@
 import { useState } from 'react'
- 
-// ─── Types ────────────────────────────────────────────────────────────────────
- 
+
 interface CaptureResult {
   success: boolean
   template?: string
+  imageBase64?: string
   error?: string
 }
- 
+
 interface IdentifyResult {
   success: boolean
   fid?: number
   score?: number
   error?: string
 }
- 
+
 interface MergeResult {
   success: boolean
   mergedTemplate?: string
   error?: string
 }
- 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
- 
+
 export function useFingerprint() {
-  const [isScanning, setIsScanning]   = useState(false)
-  const [error, setError]             = useState<string | null>(null)
-  const [scanStep, setScanStep]       = useState(0) // 0-3 to show progress in registration
- 
+  const [isScanning, setIsScanning] = useState(false)
+  const [error, setError]           = useState<string | null>(null)
+  const [scanStep, setScanStep]     = useState(0) // Counter to do scans
+  const [imageBase64, setImageBase64] = useState<string | null>(null)
+
+  const [capturedTemplates, setCapturedTemplates] = useState<string[]>([])
+
   /**
-   * Registration flow:
-   * Captures 3 fingerprints of the same finger and returns the final merged template.
-   * Use it when registering a new member.
+   * Captura UNA huella. Llamar 3 veces, una por cada clic del usuario.
+   * El usuario debe poner el dedo justo antes de cada clic.
    */
-  async function registerFingerprint(): Promise<string | null> {
+  async function captureOne(): Promise<boolean> {
     setIsScanning(true)
     setError(null)
-    setScanStep(0)
- 
-    const templates: string[] = []
- 
+
     try {
-      for (let i = 0; i < 3; i++) {
-        setScanStep(i + 1)
-        const result: CaptureResult = await window.zkAPI.capture()
-        if (!result.success) throw new Error(result.error)
-        templates.push(result.template!)
+      const result: CaptureResult = await window.zkAPI.capture()
+      if (!result.success) throw new Error(result.error)
+
+      setCapturedTemplates(prev => {
+        const updated = [...prev, result.template!]
+        setScanStep(updated.length)
+        return updated
+      })
+
+      if (result.imageBase64) {
+        setImageBase64(result.imageBase64)
       }
- 
+
+      return true
+    } catch (e: any) {
+      setError(e.message)
+      return false
+    } finally {
+      setIsScanning(false)
+    }
+  }
+
+  /**
+   * Fusiona las 3 capturas ya hechas en un template final.
+   * Llamar solo después de 3 capturas exitosas con captureOne().
+   */
+  async function finishRegistration(): Promise<string | null> {
+    if (capturedTemplates.length < 3) {
+      setError('Faltan capturas, se necesitan 3.')
+      return null
+    }
+
+    setIsScanning(true)
+    setError(null)
+
+    try {
       const merged: MergeResult = await window.zkAPI.merge(
-        templates[0],
-        templates[1],
-        templates[2]
+        capturedTemplates[0],
+        capturedTemplates[1],
+        capturedTemplates[2]
       )
       if (!merged.success) throw new Error(merged.error)
- 
       return merged.mergedTemplate!
     } catch (e: any) {
       setError(e.message)
       return null
     } finally {
       setIsScanning(false)
-      setScanStep(0)
     }
   }
- 
-  /**
-   * Kiosko flow:
-   * The member places their finger and returns their fid + score.
-   * fid corresponds to the member's ID in Supabase.
-   * Score > 50 is reliable.
-   */
+
+  /** Reinicia el progreso de registro (ej: si el usuario quiere empezar de nuevo) */
+  function resetRegistration() {
+    setCapturedTemplates([])
+    setScanStep(0)
+    setError(null)
+    setImageBase64(null)
+  }
+
+  /** Flujo del kiosko: captura + identifica en un solo paso */
   async function identifyMember(): Promise<IdentifyResult> {
     setIsScanning(true)
     setError(null)
- 
+
     try {
       const result: IdentifyResult = await window.zkAPI.identify()
       if (!result.success) throw new Error(result.error)
@@ -86,11 +112,7 @@ export function useFingerprint() {
       setIsScanning(false)
     }
   }
- 
-  /**
-   * Loads the templates of all active members to the cache.
-   * Call this when starting the app with the data from Supabase.
-   */
+
   async function loadMembersToCache(
     members: Array<{ id: number; fingerprint_template: string }>
   ): Promise<void> {
@@ -99,16 +121,16 @@ export function useFingerprint() {
       await window.zkAPI.addToCache(member.id, member.fingerprint_template)
     }
   }
- 
+
   return {
     isScanning,
     error,
-    scanStep,       // useful for showing "Attempt 1 of 3", "Attempt 2 of 3"...
-    registerFingerprint,
+    scanStep,             
+    captureOne,           
+    finishRegistration,   
+    resetRegistration,
     identifyMember,
     loadMembersToCache,
+    imageBase64,
   }
 }
- 
-
- 
