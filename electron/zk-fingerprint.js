@@ -59,14 +59,22 @@ export function initReader() {
         return { success: false, error: 'No se pudo inicializar la caché' };
     return { success: true };
 }
-export function captureFingerprint() {
+export async function captureFingerprint() {
     if (!deviceHandle)
         return { success: false, error: 'Lector no inicializado' };
     const fpImage = Buffer.alloc(imageSize);
     const fpTemplate = Buffer.alloc(MAX_TEMPLATE_SIZE);
     const cbTemplateBuf = Buffer.alloc(4);
-    cbTemplateBuf.writeUInt32LE(MAX_TEMPLATE_SIZE, 0);
-    const result = Wrap_AcquireFingerprint(deviceHandle, fpImage, imageSize, fpTemplate, cbTemplateBuf);
+    let result = -1;
+    // Reintentar hasta 10 veces con intervalos de 150ms (total ~1.5 segundos)
+    for (let attempt = 0; attempt < 10; attempt++) {
+        cbTemplateBuf.writeUInt32LE(MAX_TEMPLATE_SIZE, 0);
+        result = Wrap_AcquireFingerprint(deviceHandle, fpImage, imageSize, fpTemplate, cbTemplateBuf);
+        if (result === 0) {
+            break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 150));
+    }
     if (result !== 0)
         return { success: false, error: `Captura falló: ${result}` };
     const actualSize = cbTemplateBuf.readUInt32LE(0);
@@ -138,7 +146,12 @@ export function terminateReader() {
 export function grayscaleToPNG(rawImage, width, height) {
     const png = new PNG({ width, height, colorType: 0 }); // colorType 0 = escala de grises
     for (let i = 0; i < rawImage.length; i++) {
-        png.data[i] = rawImage[i];
+        const val = rawImage[i];
+        const idx = i * 4;
+        png.data[idx] = val; // R
+        png.data[idx + 1] = val; // G
+        png.data[idx + 2] = val; // B
+        png.data[idx + 3] = 255; // A (Opaco)
     }
     return PNG.sync.write(png);
 }

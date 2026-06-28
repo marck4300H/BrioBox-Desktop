@@ -32,7 +32,7 @@ export function useFingerprint() {
    * Captura UNA huella. Llamar 3 veces, una por cada clic del usuario.
    * El usuario debe poner el dedo justo antes de cada clic.
    */
-  async function captureOne(): Promise<boolean> {
+  async function captureOne(): Promise<string | null> {
     setIsScanning(true)
     setError(null)
 
@@ -50,10 +50,10 @@ export function useFingerprint() {
         setImageBase64(result.imageBase64)
       }
 
-      return true
+      return result.template!
     } catch (e: any) {
       setError(e.message)
-      return false
+      return null
     } finally {
       setIsScanning(false)
     }
@@ -63,8 +63,9 @@ export function useFingerprint() {
    * Fusiona las 3 capturas ya hechas en un template final.
    * Llamar solo después de 3 capturas exitosas con captureOne().
    */
-  async function finishRegistration(): Promise<string | null> {
-    if (capturedTemplates.length < 3) {
+  async function finishRegistration(templates?: string[]): Promise<string | null> {
+    const list = templates || capturedTemplates
+    if (list.length < 3) {
       setError('Faltan capturas, se necesitan 3.')
       return null
     }
@@ -74,9 +75,9 @@ export function useFingerprint() {
 
     try {
       const merged: MergeResult = await window.zkAPI.merge(
-        capturedTemplates[0],
-        capturedTemplates[1],
-        capturedTemplates[2]
+        list[0],
+        list[1],
+        list[2]
       )
       if (!merged.success) throw new Error(merged.error)
       return merged.mergedTemplate!
@@ -132,5 +133,6 @@ export function useFingerprint() {
     identifyMember,
     loadMembersToCache,
     imageBase64,
+    capturedTemplates,
   }
 }
