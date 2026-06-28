@@ -93,8 +93,8 @@ export default function RegisterClientPage() {
         await userApi.saveClientFingerprint(createdClientId, merged)
         setFpSaved(true)
         setStep('done')
-      } catch {
-        setApiError('Huella capturada pero no se pudo guardar. Intenta de nuevo.')
+      } catch (err: unknown) {
+        setApiError('Huella capturada pero no se pudo guardar. Intenta de nuevo.' + err)
       }
     }
   }
