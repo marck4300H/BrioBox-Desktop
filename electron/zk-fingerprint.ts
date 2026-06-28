@@ -132,6 +132,22 @@ export async function captureFingerprint(): Promise<{
     imageHeight: currentImageHeight,
   }
 }
+
+export function pollFingerprint(): Buffer | null {
+  if (!deviceHandle) return null
+
+  const fpImage    = Buffer.alloc(imageSize)
+  const fpTemplate = Buffer.alloc(MAX_TEMPLATE_SIZE)
+  const cbTemplateBuf = Buffer.alloc(4)
+  cbTemplateBuf.writeUInt32LE(MAX_TEMPLATE_SIZE, 0)
+
+  const result = Wrap_AcquireFingerprint(deviceHandle, fpImage, imageSize, fpTemplate, cbTemplateBuf)
+  if (result === 0) {
+    const actualSize = cbTemplateBuf.readUInt32LE(0)
+    return fpTemplate.subarray(0, actualSize)
+  }
+  return null
+}
  
 export function mergeTemplates(
   t1: Buffer, t2: Buffer, t3: Buffer

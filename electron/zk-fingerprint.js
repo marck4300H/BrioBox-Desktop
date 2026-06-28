@@ -66,7 +66,6 @@ export async function captureFingerprint() {
     const fpTemplate = Buffer.alloc(MAX_TEMPLATE_SIZE);
     const cbTemplateBuf = Buffer.alloc(4);
     let result = -1;
-    // Reintentar hasta 10 veces con intervalos de 150ms (total ~1.5 segundos)
     for (let attempt = 0; attempt < 10; attempt++) {
         cbTemplateBuf.writeUInt32LE(MAX_TEMPLATE_SIZE, 0);
         result = Wrap_AcquireFingerprint(deviceHandle, fpImage, imageSize, fpTemplate, cbTemplateBuf);
@@ -85,6 +84,20 @@ export async function captureFingerprint() {
         imageWidth: currentImageWidth,
         imageHeight: currentImageHeight,
     };
+}
+export function pollFingerprint() {
+    if (!deviceHandle)
+        return null;
+    const fpImage = Buffer.alloc(imageSize);
+    const fpTemplate = Buffer.alloc(MAX_TEMPLATE_SIZE);
+    const cbTemplateBuf = Buffer.alloc(4);
+    cbTemplateBuf.writeUInt32LE(MAX_TEMPLATE_SIZE, 0);
+    const result = Wrap_AcquireFingerprint(deviceHandle, fpImage, imageSize, fpTemplate, cbTemplateBuf);
+    if (result === 0) {
+        const actualSize = cbTemplateBuf.readUInt32LE(0);
+        return fpTemplate.subarray(0, actualSize);
+    }
+    return null;
 }
 export function mergeTemplates(t1, t2, t3) {
     if (!dbHandle)
