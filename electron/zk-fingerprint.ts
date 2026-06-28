@@ -185,7 +185,12 @@ export function grayscaleToPNG(rawImage: Buffer, width: number, height: number):
   const png = new PNG({ width, height, colorType: 0 }) // colorType 0 = escala de grises
  
   for (let i = 0; i < rawImage.length; i++) {
-    png.data[i] = rawImage[i]
+    const val = rawImage[i]
+    const idx = i * 4
+    png.data[idx]     = val // R
+    png.data[idx + 1] = val // G
+    png.data[idx + 2] = val // B
+    png.data[idx + 3] = 255 // A (Opaco)
   }
  
   return PNG.sync.write(png)
