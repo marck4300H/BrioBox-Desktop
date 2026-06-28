@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import path from 'path'
 import koffi from 'koffi'
+import { PNG } from 'pngjs'
 
 const DLL_PATH = path.join(app.getAppPath(), 'resources', 'zkfp_wrapper.dll')
 const lib = koffi.load(DLL_PATH)
@@ -55,6 +56,8 @@ const Wrap_GetCaptureParamsEx = lib.func(
 let deviceHandle: any = null
 let dbHandle: any = null                                                         
 let imageSize: number = 82944 // fallback, calculated when opening the device
+let currentImageWidth: number = 300
+let currentImageHeight: number = 400
  
 // ─── Exported functions ─────────────────────────────────────────────────────
  
@@ -80,6 +83,8 @@ export function initReader(): { success: boolean; error?: string } {
     const width = widthBuf.readInt32LE(0)
     const height = heightBuf.readInt32LE(0)
     const dpi = dpiBuf.readInt32LE(0)
+    currentImageWidth = width
+    currentImageHeight = height
     imageSize = width * height
     console.log(`ZK Reader: ${width}x${height} @ ${dpi}DPI — imageSize: ${imageSize}`)
   }
@@ -90,19 +95,33 @@ export function initReader(): { success: boolean; error?: string } {
   return { success: true }
 }
  
-export function captureFingerprint(): { success: boolean; template?: Buffer; error?: string } {
+export function captureFingerprint(): {
+  success: boolean
+  template?: Buffer
+  image?: Buffer
+  imageWidth?: number
+  imageHeight?: number
+  error?: string
+} {
   if (!deviceHandle) return { success: false, error: 'Lector no inicializado' }
- 
+
   const fpImage    = Buffer.alloc(imageSize)
   const fpTemplate = Buffer.alloc(MAX_TEMPLATE_SIZE)
   const cbTemplateBuf = Buffer.alloc(4)
   cbTemplateBuf.writeUInt32LE(MAX_TEMPLATE_SIZE, 0)
- 
+
   const result = Wrap_AcquireFingerprint(deviceHandle, fpImage, imageSize, fpTemplate, cbTemplateBuf)
   if (result !== 0) return { success: false, error: `Captura falló: ${result}` }
- 
+
   const actualSize = cbTemplateBuf.readUInt32LE(0)
-  return { success: true, template: fpTemplate.subarray(0, actualSize) }
+
+  return {
+    success: true,
+    template: fpTemplate.subarray(0, actualSize),
+    image: fpImage,
+    imageWidth: currentImageWidth,
+    imageHeight: currentImageHeight,
+  }
 }
  
 export function mergeTemplates(
@@ -160,5 +179,15 @@ export function terminateReader(): void {
   if (dbHandle)     { Wrap_DBFree(dbHandle);       dbHandle     = null }
   if (deviceHandle) { Wrap_CloseDevice(deviceHandle); deviceHandle = null }
   Wrap_Terminate()
+}
+ 
+export function grayscaleToPNG(rawImage: Buffer, width: number, height: number): Buffer {
+  const png = new PNG({ width, height, colorType: 0 }) // colorType 0 = escala de grises
+ 
+  for (let i = 0; i < rawImage.length; i++) {
+    png.data[i] = rawImage[i]
+  }
+ 
+  return PNG.sync.write(png)
 }
  

@@ -11,7 +11,7 @@ export default defineConfig({
         vite: {
           build: {
             rollupOptions: {
-              external: ['koffi'],
+              external: ['koffi', 'pngjs'],
             },
           },
         },
