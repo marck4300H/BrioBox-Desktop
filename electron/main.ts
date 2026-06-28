@@ -9,7 +9,7 @@ process.env.PATH = resourcesPath + ';' + (process.env.PATH || '')
 // Forces 
 try {
   execSync(`cd /d "${resourcesPath}"`)
-} catch {}
+} catch { }
 
 import {
   initReader,
@@ -21,19 +21,19 @@ import {
   clearCache,
   identifyFingerprint,
   terminateReader,
-  grayscaleToPNG,                       
+  grayscaleToPNG,
 } from './zk-fingerprint'
- 
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
- 
+
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
- 
+
 let adminWindow: BrowserWindow | null = null
 let kioskWindow: BrowserWindow | null = null
- 
+
 function createAdminWindow(display: Electron.Display) {
   const { x, y, width, height } = display.bounds
- 
+
   adminWindow = new BrowserWindow({
     x,
     y,
@@ -46,15 +46,57 @@ function createAdminWindow(display: Electron.Display) {
     },
     title: 'BrioBox — Sistema de Gestión',
   })
- 
+
   if (VITE_DEV_SERVER_URL) {
     adminWindow.loadURL(VITE_DEV_SERVER_URL)
   } else {
     adminWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
 }
- 
+
 let isPollingKiosk = false
+
+async function loadFingerprintsIntoCache(apiUrl: string): Promise<void> {
+  console.log('Kiosko: Cargando huellas desde la API...')
+  try {
+    const res = await fetch(`${apiUrl}/fingerprints`)
+    if (!res.ok) {
+      console.error(`Kiosko: Error al obtener huellas de la API (status: ${res.status})`)
+      return
+    }
+    const data: any = await res.json()
+    
+    // La API retorna directamente un Array de huellas
+    const fingerprintsArray = Array.isArray(data) ? data : (data?.fingerprints || [])
+    
+    if (!Array.isArray(fingerprintsArray)) {
+      console.error('Kiosko: Respuesta de huellas inválida (no es array):', data)
+      return
+    }
+
+    clearCache() // Limpiar caché previa
+    let loaded = 0
+    for (const entry of fingerprintsArray) {
+      if (!entry.fingerprint_hash) continue 
+      const numericFid = parseInt(String(entry.id), 10)
+      if (isNaN(numericFid)) {
+        console.warn(`Kiosko: ID no numérico ignorado: ${entry.id}`)
+        continue
+      }
+      const templateBuffer = Buffer.from(entry.fingerprint_hash, 'base64')
+      const addResult = addToCache(numericFid, templateBuffer)
+      if (addResult.success) {
+        loaded++
+      } else {
+        console.warn(`Kiosko: Error al cargar huella del cliente ${entry.id}:`, addResult.error)
+      }
+    }
+
+    console.log(`Kiosko: ${loaded} huellas cargadas en la caché local del lector.`)
+  } catch (err) {
+    console.error('Kiosko: Excepción al cargar huellas:', err)
+  }
+}
 
 async function startKioskPolling() {
   if (isPollingKiosk) return
@@ -63,14 +105,17 @@ async function startKioskPolling() {
 
   const apiUrl = process.env.VITE_API_URL || 'https://stayaway-briobox-server.onrender.com/api'
 
+  // Cargar todas las huellas en la caché local del SDK ZK antes de empezar a escuchar
+  await loadFingerprintsIntoCache(apiUrl)
+
   while (isPollingKiosk && kioskWindow && !kioskWindow.isDestroyed()) {
     try {
       const template = pollFingerprint()
       if (template) {
         const result = identifyFingerprint(template)
         if (result.success && result.fid !== undefined && result.score !== undefined && result.score >= 50) {
-          console.log(`Lector Kiosko: Huella identificada con FID ${result.fid} (Score: ${result.score})`)
-          
+          console.log(`Lector Kiosko: Huella identificada. FID/ClienteID=${result.fid}, Score=${result.score}`)
+
           try {
             const apiRes = await fetch(`${apiUrl}/users/customer/${result.fid}`)
             if (apiRes.ok) {
@@ -78,24 +123,24 @@ async function startKioskPolling() {
               if (resData.success && resData.user) {
                 const client = resData.user
                 const fullName = `${client.first_name} ${client.paternal_last_name}`
-                
-                kioskWindow.webContents.send('fingerprint-detected', {
+
+                kioskWindow?.webContents.send('fingerprint-detected', {
                   id: client.id,
                   name: fullName,
                   membershipType: client.membershipType || 'Activa',
                 })
               }
             } else {
-              console.warn(`Lector Kiosko: No se pudo obtener datos del cliente ${result.fid} de la API (status: ${apiRes.status})`)
+              console.warn(`Lector Kiosko: No se pudo obtener datos del cliente ${result.fid} (status: ${apiRes.status})`)
             }
           } catch (err) {
             console.error('Lector Kiosko: Error consultando datos del cliente:', err)
           }
 
-          // Esperar 4.5 segundos para que la UI del kiosko muestre el mensaje de éxito sin detectar la misma huella repetidamente
+          // Esperar 4.5s para no detectar la misma huella repetidamente
           await new Promise(resolve => setTimeout(resolve, 4500))
         } else {
-          // Si detectó algo pero no coincide con la confianza mínima, espera brevemente
+          // Detectó algo pero con score bajo, espera breve antes del siguiente intento
           await new Promise(resolve => setTimeout(resolve, 300))
         }
       }
@@ -112,7 +157,7 @@ async function startKioskPolling() {
 
 function createKioskWindow(display: Electron.Display) {
   const { x, y, width, height } = display.bounds
- 
+
   kioskWindow = new BrowserWindow({
     x,
     y,
@@ -125,7 +170,7 @@ function createKioskWindow(display: Electron.Display) {
     },
     title: 'BrioBox — Entrada',
   })
- 
+
   if (VITE_DEV_SERVER_URL) {
     kioskWindow.loadURL(`${VITE_DEV_SERVER_URL}#/kiosk`)
   } else {
@@ -141,12 +186,12 @@ function createKioskWindow(display: Electron.Display) {
 
   startKioskPolling()
 }
- 
+
 // ─── App ready ────────────────────────────────────────────────────────────────
- 
+
 app.whenReady().then(() => {
-  const displays  = screen.getAllDisplays()
-  const primary   = screen.getPrimaryDisplay()
+  const displays = screen.getAllDisplays()
+  const primary = screen.getPrimaryDisplay()
   const secondary = displays.find(d => d.id !== primary.id)
 
   console.log('arch:', process.arch)
@@ -163,22 +208,22 @@ app.whenReady().then(() => {
   createAdminWindow(primary)
   createKioskWindow(secondary ?? primary)  // ← startKioskPolling() se llama aquí, el lector ya está listo
 })
- 
+
 app.on('before-quit', () => {
   terminateReader()
 })
- 
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
- 
+
 // ─── IPC: Fingerprint ─────────────────────────────────────────────────────
- 
+
 // Captures a fingerprint and returns the template in base64
 ipcMain.handle('zk:capture', async () => {
   const result = await captureFingerprint()
   if (!result.success) return { success: false, error: result.error }
-  
+
   let imageBase64: string | undefined = undefined
   if (result.image && result.imageWidth && result.imageHeight) {
     try {
@@ -189,13 +234,13 @@ ipcMain.handle('zk:capture', async () => {
     }
   }
 
-  return { 
-    success: true, 
+  return {
+    success: true,
     template: result.template!.toString('base64'),
     imageBase64
   }
 })
- 
+
 // Merges 3 captured templates to generate the registration template
 ipcMain.handle('zk:merge', async (_e, t1b64: string, t2b64: string, t3b64: string) => {
   const t1 = Buffer.from(t1b64, 'base64')
@@ -205,29 +250,29 @@ ipcMain.handle('zk:merge', async (_e, t1b64: string, t2b64: string, t3b64: strin
   if (!result.success) return { success: false, error: result.error }
   return { success: true, mergedTemplate: result.mergedTemplate!.toString('base64') }
 })
- 
+
 // Adds a template to the identification cache
 ipcMain.handle('zk:addToCache', async (_e, fid: number, templateB64: string) => {
   return addToCache(fid, Buffer.from(templateB64, 'base64'))
 })
- 
+
 // Removes a member from the cache
 ipcMain.handle('zk:removeFromCache', async (_e, fid: number) => {
   return removeFromCache(fid)
 })
- 
+
 // Clears the entire cache
 ipcMain.handle('zk:clearCache', async () => {
   return clearCache()
 })
- 
+
 // Captures + identifies in one step (kiosk flow)
 ipcMain.handle('zk:identify', async () => {
   const capture = await captureFingerprint()
   if (!capture.success) return { success: false, error: capture.error }
- 
+
   const result = identifyFingerprint(capture.template!)
   if (!result.success) return { success: false, error: result.error }
- 
+
   return { success: true, fid: result.fid, score: result.score }
 })
