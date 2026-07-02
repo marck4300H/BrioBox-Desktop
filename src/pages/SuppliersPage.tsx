@@ -232,20 +232,20 @@ export default function SuppliersPage() {
             </button>
           </div>
 
-          <div className="bg-[#141414] border border-white/5 rounded-2xl p-5 flex flex-col gap-4 shadow-2xl">
+          <div className={`rounded-2xl p-5 flex flex-col gap-4 shadow-2xl border transition-colors ${dark ? 'bg-[#141414] border-white/5' : 'bg-white border-black/10'}`}>
           {error && (
-            <div className="rounded-lg border border-red-900/40 bg-red-950/20 px-4 py-3 text-sm text-red-300">
+            <div className={`rounded-lg border px-4 py-3 text-sm ${dark ? 'border-red-900/40 bg-red-950/20 text-red-300' : 'border-red-200 bg-red-50 text-red-700'}`}>
               {error}
             </div>
           )}
 
           {loading && (
-            <div className="rounded-lg border border-white/5 bg-[#111111] px-4 py-3 text-sm text-white/60">
+            <div className={`rounded-lg border px-4 py-3 text-sm ${dark ? 'border-white/5 bg-[#111111] text-white/60' : 'border-black/10 bg-gray-50 text-black/60'}`}>
               Cargando proveedores...
             </div>
           )}
             <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-              <div className={`w-full md:max-w-sm ${dark ? "bg-[#141414]" : "bg-[#f0f0f0]"}`}>
+              <div className="w-full md:max-w-sm">
                 <input
                   type="text"
                   placeholder="Buscar por nombre, NIT, teléfono o correo..."
@@ -259,16 +259,16 @@ export default function SuppliersPage() {
                 />
               </div>
 
-              <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-white/30">
+              <div className={`flex items-center gap-2 text-xs uppercase tracking-widest ${dark ? 'text-white/30' : 'text-black/40'}`}>
                 <span>Total:</span>
-                <span className="text-white">{filteredSuppliers.length}</span>
+                <span className={dark ? 'text-white' : 'text-[#111]'}>{filteredSuppliers.length}</span>
               </div>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-white/5">
+            <div className={`overflow-x-auto rounded-xl border ${dark ? 'border-white/5' : 'border-black/10'}`}>
               <table className="w-full min-w-[950px] text-sm">
-                <thead className="bg-[#101010]">
-                  <tr className="text-left text-white/40 uppercase tracking-widest text-[10px]">
+                <thead className={dark ? 'bg-[#101010]' : 'bg-gray-100'}>
+                  <tr className={`text-left uppercase tracking-widest text-[10px] ${dark ? 'text-white/40' : 'text-black/50'}`}>
                     <th className="px-4 py-4">Proveedor</th>
                     <th className="px-4 py-4">NIT</th>
                     <th className="px-4 py-4">Teléfono</th>
@@ -282,19 +282,19 @@ export default function SuppliersPage() {
                   {filteredSuppliers.map(supplier => (
                     <tr
                       key={supplier.id}
-                      className="border-t border-white/5 hover:bg-white/[0.02] transition-colors"
+                      className={`border-t transition-colors ${dark ? 'border-white/5 hover:bg-white/[0.02]' : 'border-black/5 hover:bg-black/[0.02]'}`}
                     >
-                      <td className="px-4 py-4 text-white font-medium">{supplier.name}</td>
-                      <td className="px-4 py-4 text-white/70">{supplier.nit}</td>
-                      <td className="px-4 py-4 text-white/70">{supplier.phone ?? '—'}</td>
-                      <td className="px-4 py-4 text-white/70">{supplier.email}</td>
-                      <td className="px-4 py-4 text-white/70">{supplier.address}</td>
+                      <td className={`px-4 py-4 font-medium ${dark ? 'text-white' : 'text-[#111]'}`}>{supplier.name}</td>
+                      <td className={`px-4 py-4 ${dark ? 'text-white/70' : 'text-black/70'}`}>{supplier.nit}</td>
+                      <td className={`px-4 py-4 ${dark ? 'text-white/70' : 'text-black/70'}`}>{supplier.phone ?? '—'}</td>
+                      <td className={`px-4 py-4 ${dark ? 'text-white/70' : 'text-black/70'}`}>{supplier.email}</td>
+                      <td className={`px-4 py-4 ${dark ? 'text-white/70' : 'text-black/70'}`}>{supplier.address}</td>
                       <td className="px-4 py-4">
                         <span
                           className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${
                             supplier.is_active
-                              ? 'bg-green-950/20 text-green-400 border-green-900/30'
-                              : 'bg-yellow-950/20 text-yellow-300 border-yellow-700/30'
+                              ? dark ? 'bg-green-950/20 text-green-400 border-green-900/30' : 'bg-green-50 text-green-700 border-green-200'
+                              : dark ? 'bg-yellow-950/20 text-yellow-300 border-yellow-700/30' : 'bg-yellow-50 text-yellow-700 border-yellow-200'
                           }`}
                         >
                           {supplier.is_active ? 'Activo' : 'Inactivo'}
@@ -304,14 +304,18 @@ export default function SuppliersPage() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => openEditModal(supplier)}
-                            className="px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider bg-white/5 text-white/60 hover:bg-white/10 transition-colors"
+                            className={`px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider transition-colors ${
+                              dark ? 'bg-white/5 text-white/60 hover:bg-white/10' : 'bg-black/5 text-black/60 hover:bg-black/10'
+                            }`}
                           >
                             Editar
                           </button>
                           <button
                             onClick={() => handleDelete(supplier.id)}
                             disabled={deletingId === supplier.id}
-                            className="px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider bg-red-950/20 text-red-300 hover:bg-red-900/30 transition-colors disabled:opacity-60"
+                            className={`px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider transition-colors disabled:opacity-60 ${
+                              dark ? 'bg-red-950/20 text-red-300 hover:bg-red-900/30' : 'bg-red-50 text-red-600 hover:bg-red-100'
+                            }`}
                           >
                             {deletingId === supplier.id ? 'Eliminando...' : 'Eliminar'}
                           </button>
@@ -321,8 +325,8 @@ export default function SuppliersPage() {
                   ))}
                 </tbody>
               </table>
-              <div className="flex items-center justify-between pt-2">
-                <p className="text-xs uppercase tracking-widest text-white/30">
+              <div className={`flex items-center justify-between p-4 border-t ${dark ? 'border-white/5' : 'border-black/5 bg-white'}`}>
+                <p className={`text-xs uppercase tracking-widest ${dark ? 'text-white/30' : 'text-black/40'}`}>
                   Página {page} de {totalPages} · Total registros: {total}
                 </p>
 
@@ -330,7 +334,9 @@ export default function SuppliersPage() {
                   <button
                     onClick={() => setPage(prev => Math.max(1, prev - 1))}
                     disabled={page === 1}
-                    className="px-3 py-2 rounded-lg border border-white/10 text-white/60 disabled:opacity-40"
+                    className={`px-3 py-2 rounded-lg border disabled:opacity-40 transition-colors ${
+                      dark ? 'border-white/10 text-white/60 hover:bg-white/5' : 'border-black/10 text-black/60 hover:bg-black/5'
+                    }`}
                   >
                     Anterior
                   </button>
@@ -338,7 +344,9 @@ export default function SuppliersPage() {
                   <button
                     onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={page >= totalPages}
-                    className="px-3 py-2 rounded-lg border border-white/10 text-white/60 disabled:opacity-40"
+                    className={`px-3 py-2 rounded-lg border disabled:opacity-40 transition-colors ${
+                      dark ? 'border-white/10 text-white/60 hover:bg-white/5' : 'border-black/10 text-black/60 hover:bg-black/5'
+                    }`}
                   >
                     Siguiente
                   </button>

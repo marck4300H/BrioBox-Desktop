@@ -456,13 +456,13 @@ export default function CashRegisterPage() {
             <>
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
-                  <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
+                  <p className={`text-[10px] uppercase tracking-widest mb-1 ${dark ? 'text-white/30' : 'text-black/40'}`}>
                     Sesión activa
                   </p>
-                  <h2 className="text-2xl font-bold text-white">
+                  <h2 className={`text-2xl font-bold ${dark ? 'text-white' : 'text-[#111]'}`}>
                     Caja #{currentSession.session.id}
                   </h2>
-                  <p className="text-sm text-white/40 mt-1">
+                  <p className={`text-sm mt-1 ${dark ? 'text-white/40' : 'text-black/50'}`}>
                     Abierta el {formatDateTime(currentSession.session.opened_at)}
                   </p>
                 </div>
@@ -470,14 +470,22 @@ export default function CashRegisterPage() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={loadCurrentSession}
-                    className="px-4 py-2 rounded-lg border border-white/10 text-white/60 hover:text-white hover:border-red-900/40 hover:bg-white/5 transition-all text-sm"
+                    className={`px-4 py-2 rounded-lg border text-sm transition-all ${
+                      dark
+                        ? 'border-white/10 text-white/60 hover:text-white hover:border-red-900/40 hover:bg-white/5'
+                        : 'border-black/10 text-black/60 hover:text-black hover:border-red-400 hover:bg-black/5'
+                    }`}
                   >
                     Recargar
                   </button>
 
                   <button
                     onClick={exportDayReport}
-                    className="px-5 py-2.5 rounded-lg bg-[#1b1b1b] border border-white/10 hover:border-red-900/40 hover:bg-white/5 text-white font-semibold tracking-wide text-sm transition-colors"
+                    className={`px-5 py-2.5 rounded-lg border font-semibold tracking-wide text-sm transition-colors ${
+                      dark
+                        ? 'bg-[#1b1b1b] border-white/10 text-white hover:border-red-900/40 hover:bg-white/5'
+                        : 'bg-[#111] border-black/10 text-white hover:bg-black/90'
+                    }`}
                   >
                     Exportar reporte
                   </button>
@@ -485,52 +493,52 @@ export default function CashRegisterPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-                <div className="rounded-xl p-5 border bg-[#141414] border-white/5">
-                  <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
+                <div className={`rounded-xl p-5 border transition-colors ${dark ? 'bg-[#141414] border-white/5' : 'bg-white border-black/10 shadow-lg shadow-black/5'}`}>
+                  <p className={`text-[10px] uppercase tracking-widest mb-1 ${dark ? 'text-white/30' : 'text-black/40'}`}>
                     Apertura
                   </p>
-                  <p className="text-2xl font-bold text-white">
+                  <p className={`text-2xl font-bold ${dark ? 'text-white' : 'text-[#111]'}`}>
                     {formatCurrency(totals?.opening ?? 0)}
                   </p>
                 </div>
 
-                <div className="rounded-xl p-5 border bg-[#141414] border-white/5">
-                  <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
+                <div className={`rounded-xl p-5 border transition-colors ${dark ? 'bg-[#141414] border-white/5' : 'bg-white border-black/10 shadow-lg shadow-black/5'}`}>
+                  <p className={`text-[10px] uppercase tracking-widest mb-1 ${dark ? 'text-white/30' : 'text-black/40'}`}>
                     Ingresos
                   </p>
-                  <p className="text-2xl font-bold text-green-400">
+                  <p className="text-2xl font-bold text-green-500">
                     {formatCurrency(totals?.income ?? 0)}
                   </p>
                 </div>
 
-                <div className="rounded-xl p-5 border bg-[#141414] border-white/5">
-                  <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
+                <div className={`rounded-xl p-5 border transition-colors ${dark ? 'bg-[#141414] border-white/5' : 'bg-white border-black/10 shadow-lg shadow-black/5'}`}>
+                  <p className={`text-[10px] uppercase tracking-widest mb-1 ${dark ? 'text-white/30' : 'text-black/40'}`}>
                     Egresos
                   </p>
-                  <p className="text-2xl font-bold text-red-400">
+                  <p className="text-2xl font-bold text-red-500">
                     {formatCurrency(totals?.expense ?? 0)}
                   </p>
                 </div>
 
-                <div className="rounded-xl p-5 border bg-[#141414] border-white/5">
-                  <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
+                <div className={`rounded-xl p-5 border transition-colors ${dark ? 'bg-[#141414] border-white/5' : 'bg-white border-black/10 shadow-lg shadow-black/5'}`}>
+                  <p className={`text-[10px] uppercase tracking-widest mb-1 ${dark ? 'text-white/30' : 'text-black/40'}`}>
                     Esperado
                   </p>
-                  <p className="text-2xl font-bold text-white">
+                  <p className={`text-2xl font-bold ${dark ? 'text-white' : 'text-[#111]'}`}>
                     {formatCurrency(totals?.expected ?? 0)}
                   </p>
                 </div>
 
-                <div className="rounded-xl p-5 border bg-[#141414] border-white/5">
-                  <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
+                <div className={`rounded-xl p-5 border transition-colors ${dark ? 'bg-[#141414] border-white/5' : 'bg-white border-black/10 shadow-lg shadow-black/5'}`}>
+                  <p className={`text-[10px] uppercase tracking-widest mb-1 ${dark ? 'text-white/30' : 'text-black/40'}`}>
                     Diferencia
                   </p>
                   <p
                     className={`text-2xl font-bold ${(totals?.difference ?? 0) > 0
-                        ? 'text-green-400'
+                        ? 'text-green-500'
                         : (totals?.difference ?? 0) < 0
-                          ? 'text-red-400'
-                          : 'text-white'
+                          ? 'text-red-500'
+                          : dark ? 'text-white' : 'text-[#111]'
                       }`}
                   >
                     {formatCurrency(totals?.difference ?? 0)}
@@ -539,30 +547,30 @@ export default function CashRegisterPage() {
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-6">
-                <div className="bg-[#141414] border border-white/5 rounded-2xl p-6 shadow-2xl flex flex-col gap-4">
+                <div className={`border rounded-2xl p-6 shadow-2xl flex flex-col gap-4 transition-colors ${dark ? 'bg-[#141414] border-white/5' : 'bg-white border-black/10'}`}>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
+                      <p className={`text-[10px] uppercase tracking-widest mb-1 ${dark ? 'text-white/30' : 'text-black/40'}`}>
                         Movimientos
                       </p>
-                      <h3 className="text-xl font-bold text-white">
+                      <h3 className={`text-xl font-bold ${dark ? 'text-white' : 'text-[#111]'}`}>
                         Resumen del día
                       </h3>
                     </div>
-                    <span className="text-xs uppercase tracking-widest text-white/30">
+                    <span className={`text-xs uppercase tracking-widest ${dark ? 'text-white/30' : 'text-black/40'}`}>
                       {currentSession.movements.length} registros
                     </span>
                   </div>
 
                   {currentSession.movements.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-white/10 p-8 text-center text-white/30 text-sm">
+                    <div className={`rounded-xl border border-dashed p-8 text-center text-sm ${dark ? 'border-white/10 text-white/30' : 'border-black/20 text-black/40'}`}>
                       No hay movimientos registrados en esta sesión.
                     </div>
                   ) : (
-                    <div className="overflow-x-auto rounded-xl border border-white/5">
+                    <div className={`overflow-x-auto rounded-xl border ${dark ? 'border-white/5' : 'border-black/10'}`}>
                       <table className="w-full min-w-[700px] text-sm">
-                        <thead className="bg-[#101010]">
-                          <tr className="text-left text-white/40 uppercase tracking-widest text-[10px]">
+                        <thead className={dark ? 'bg-[#101010]' : 'bg-gray-100'}>
+                          <tr className={`text-left uppercase tracking-widest text-[10px] ${dark ? 'text-white/40' : 'text-black/50'}`}>
                             <th className="px-4 py-4">Tipo</th>
                             <th className="px-4 py-4">Monto</th>
                             <th className="px-4 py-4">Descripción</th>
@@ -573,25 +581,25 @@ export default function CashRegisterPage() {
                           {currentSession.movements.map(movement => (
                             <tr
                               key={movement.id}
-                              className="border-t border-white/5 hover:bg-white/[0.02] transition-colors"
+                              className={`border-t transition-colors ${dark ? 'border-white/5 hover:bg-white/[0.02]' : 'border-black/5 hover:bg-black/[0.02]'}`}
                             >
                               <td className="px-4 py-4">
                                 <span
                                   className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${movement.movement_type === 'ingreso'
-                                      ? 'bg-green-950/20 text-green-400 border-green-900/30'
-                                      : 'bg-red-950/20 text-red-400 border-red-900/30'
+                                      ? dark ? 'bg-green-950/20 text-green-400 border-green-900/30' : 'bg-green-50 text-green-700 border-green-200'
+                                      : dark ? 'bg-red-950/20 text-red-400 border-red-900/30' : 'bg-red-50 text-red-600 border-red-200'
                                     }`}
                                 >
                                   {movement.movement_type}
                                 </span>
                               </td>
-                              <td className="px-4 py-4 text-white font-medium">
+                              <td className={`px-4 py-4 font-medium ${dark ? 'text-white' : 'text-[#111]'}`}>
                                 {formatCurrency(movement.amount)}
                               </td>
-                              <td className="px-4 py-4 text-white/70">
+                              <td className={`px-4 py-4 ${dark ? 'text-white/70' : 'text-black/70'}`}>
                                 {movement.description}
                               </td>
-                              <td className="px-4 py-4 text-white/50 text-xs">
+                              <td className={`px-4 py-4 text-xs ${dark ? 'text-white/50' : 'text-black/50'}`}>
                                 {formatDateTime(movement.created_at)}
                               </td>
                             </tr>
@@ -603,19 +611,19 @@ export default function CashRegisterPage() {
                 </div>
 
                 <div className="flex flex-col gap-6">
-                  <div className="bg-[#141414] border border-white/5 rounded-2xl p-6 shadow-2xl flex flex-col gap-4">
+                  <div className={`border rounded-2xl p-6 shadow-2xl flex flex-col gap-4 transition-colors ${dark ? 'bg-[#141414] border-white/5' : 'bg-white border-black/10'}`}>
                     <div>
-                      <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
+                      <p className={`text-[10px] uppercase tracking-widest mb-1 ${dark ? 'text-white/30' : 'text-black/40'}`}>
                         Egresos manuales
                       </p>
-                      <h3 className="text-xl font-bold text-white">
+                      <h3 className={`text-xl font-bold ${dark ? 'text-white' : 'text-[#111]'}`}>
                         Registrar egreso
                       </h3>
                     </div>
 
                     <form onSubmit={handleCreateExpense} className="flex flex-col gap-4">
                       <div className="flex flex-col gap-1">
-                        <label className="text-white/40 text-[10px] uppercase tracking-widest">
+                        <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/50'}`}>
                           Monto
                         </label>
                         <input
@@ -626,12 +634,16 @@ export default function CashRegisterPage() {
                             setMovementForm(prev => ({ ...prev, amount: e.target.value }))
                           }
                           placeholder="15000"
-                          className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors"
+                          className={`rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-colors ${
+                            dark
+                              ? 'bg-[#111111] border border-[#2a2a2a] text-white placeholder-white/20 focus:border-red-900/60'
+                              : 'bg-gray-50 border border-black/10 text-[#111] placeholder-black/30 focus:border-red-400'
+                          }`}
                         />
                       </div>
 
                       <div className="flex flex-col gap-1">
-                        <label className="text-white/40 text-[10px] uppercase tracking-widest">
+                        <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/50'}`}>
                           Descripción
                         </label>
                         <textarea
@@ -641,12 +653,16 @@ export default function CashRegisterPage() {
                             setMovementForm(prev => ({ ...prev, description: e.target.value }))
                           }
                           placeholder="Compra implementos de limpieza"
-                          className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors resize-none"
+                          className={`rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-colors resize-none ${
+                            dark
+                              ? 'bg-[#111111] border border-[#2a2a2a] text-white placeholder-white/20 focus:border-red-900/60'
+                              : 'bg-gray-50 border border-black/10 text-[#111] placeholder-black/30 focus:border-red-400'
+                          }`}
                         />
                       </div>
 
                       {movementError && (
-                        <div className="text-red-400 text-sm bg-red-950/20 border border-red-900/30 rounded-lg px-4 py-3">
+                        <div className={`text-sm rounded-lg border px-4 py-3 ${dark ? 'bg-red-950/20 border-red-900/30 text-red-400' : 'bg-red-50 border-red-200 text-red-700'}`}>
                           {movementError}
                         </div>
                       )}
@@ -661,23 +677,23 @@ export default function CashRegisterPage() {
                     </form>
                   </div>
 
-                  <div className="bg-[#141414] border border-white/5 rounded-2xl p-6 shadow-2xl flex flex-col gap-4">
+                  <div className={`border rounded-2xl p-6 shadow-2xl flex flex-col gap-4 transition-colors ${dark ? 'bg-[#141414] border-white/5' : 'bg-white border-black/10'}`}>
                     <div>
-                      <p className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
+                      <p className={`text-[10px] uppercase tracking-widest mb-1 ${dark ? 'text-white/30' : 'text-black/40'}`}>
                         Cierre
                       </p>
-                      <h3 className="text-xl font-bold text-white">
+                      <h3 className={`text-xl font-bold ${dark ? 'text-white' : 'text-[#111]'}`}>
                         Cerrar caja
                       </h3>
                     </div>
 
                     <form onSubmit={handleCloseCash} className="flex flex-col gap-4">
-                      <div className="rounded-xl border border-white/5 bg-[#101010] p-4 text-sm text-white/60">
-                        Total esperado: <span className="text-white font-semibold">{formatCurrency(totals?.expected ?? 0)}</span>
+                      <div className={`rounded-xl border p-4 text-sm ${dark ? 'border-white/5 bg-[#101010] text-white/60' : 'border-black/10 bg-gray-50 text-black/60'}`}>
+                        Total esperado: <span className={`font-semibold ${dark ? 'text-white' : 'text-[#111]'}`}>{formatCurrency(totals?.expected ?? 0)}</span>
                       </div>
 
                       <div className="flex flex-col gap-1">
-                        <label className="text-white/40 text-[10px] uppercase tracking-widest">
+                        <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/50'}`}>
                           Total real contado
                         </label>
                         <input
@@ -691,12 +707,16 @@ export default function CashRegisterPage() {
                             }))
                           }
                           placeholder="134000"
-                          className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors"
+                          className={`rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-colors ${
+                            dark
+                              ? 'bg-[#111111] border border-[#2a2a2a] text-white placeholder-white/20 focus:border-red-900/60'
+                              : 'bg-gray-50 border border-black/10 text-[#111] placeholder-black/30 focus:border-red-400'
+                          }`}
                         />
                       </div>
 
                       <div className="flex flex-col gap-1">
-                        <label className="text-white/40 text-[10px] uppercase tracking-widest">
+                        <label className={`text-[10px] uppercase tracking-widest ${dark ? 'text-white/40' : 'text-black/50'}`}>
                           Notes
                         </label>
                         <textarea
@@ -706,12 +726,16 @@ export default function CashRegisterPage() {
                             setCloseForm(prev => ({ ...prev, notes: e.target.value }))
                           }
                           placeholder="Cierre turno mañana"
-                          className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-900/60 transition-colors resize-none"
+                          className={`rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-colors resize-none ${
+                            dark
+                              ? 'bg-[#111111] border border-[#2a2a2a] text-white placeholder-white/20 focus:border-red-900/60'
+                              : 'bg-gray-50 border border-black/10 text-[#111] placeholder-black/30 focus:border-red-400'
+                          }`}
                         />
                       </div>
 
                       {closeError && (
-                        <div className="text-red-400 text-sm bg-red-950/20 border border-red-900/30 rounded-lg px-4 py-3">
+                        <div className={`text-sm rounded-lg border px-4 py-3 ${dark ? 'bg-red-950/20 border-red-900/30 text-red-400' : 'bg-red-50 border-red-200 text-red-700'}`}>
                           {closeError}
                         </div>
                       )}

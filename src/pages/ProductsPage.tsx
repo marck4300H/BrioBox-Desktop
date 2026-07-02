@@ -239,10 +239,10 @@ export default function ProductsPage() {
                 </button>
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-white/5">
+              <div className={`overflow-x-auto rounded-xl border ${dark ? 'border-white/5' : 'border-black/10'}`}>
                 <table className="w-max min-w-full text-sm table-auto">
-                  <thead className="bg-[#101010]">
-                    <tr className="text-left text-white/40 uppercase tracking-widest text-[10px]">
+                  <thead className={dark ? 'bg-[#101010]' : 'bg-gray-100'}>
+                    <tr className={`text-left uppercase tracking-widest text-[10px] ${dark ? 'text-white/40' : 'text-black/50'}`}>
                       <th className="px-4 py-4 w-[280px]">Producto</th>
                       <th className="px-4 py-4 w-[290px]">Precio</th>
                       <th className="px-4 py-4 w-[290px]">Stock</th>
@@ -254,24 +254,24 @@ export default function ProductsPage() {
                     {filteredProducts.map(product => (
                       <tr
                         key={product.id}
-                        className="border-t border-white/5 hover:bg-white/[0.02] transition-colors"
+                        className={`border-t transition-colors ${dark ? 'border-white/5 hover:bg-white/[0.02]' : 'border-black/5 hover:bg-black/[0.02]'}`}
                       >
                         <td className="px-4 py-4">
                           <div className="flex flex-col gap-1">
-                            <span className="text-white font-medium">{product.name}</span>
+                            <span className={`font-medium ${dark ? 'text-white' : 'text-[#111]'}`}>{product.name}</span>
                           </div>
                         </td>
 
-                        <td className="px-4 py-4 text-white font-medium">
+                        <td className={`px-4 py-4 font-medium ${dark ? 'text-white' : 'text-[#111]'}`}>
                           {formatPrice(product.price)}
                         </td>
 
                         <td className="px-4 py-4">
                           <span
-                            className={`px-2.5 py-1 rounded-full text-[11px] font-medium ${
+                            className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${
                               product.stock > 0
-                                ? 'bg-white/5 text-white/70 border border-white/10'
-                                : 'bg-red-950/30 text-red-400 border border-red-900/30'
+                                ? dark ? 'bg-white/5 text-white/70 border-white/10' : 'bg-black/5 text-black/70 border-black/10'
+                                : dark ? 'bg-red-950/30 text-red-400 border-red-900/30' : 'bg-red-50 text-red-600 border-red-200'
                             }`}
                           >
                             {product.stock > 0 ? `${product.stock} disponibles` : 'Sin stock'}
@@ -282,8 +282,8 @@ export default function ProductsPage() {
                           <span
                             className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${
                               product.is_active
-                                ? 'bg-green-950/20 text-green-400 border-green-900/30'
-                                : 'bg-white/5 text-white/40 border-white/10'
+                                ? dark ? 'bg-green-950/20 text-green-400 border-green-900/30' : 'bg-green-50 text-green-700 border-green-200'
+                                : dark ? 'bg-white/5 text-white/40 border-white/10' : 'bg-black/5 text-black/50 border-black/10'
                             }`}
                           >
                             {product.is_active ? 'Activo' : 'Inactivo'}

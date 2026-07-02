@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { userApi, type Client } from '../api/user.api';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
+import { useFingerprint } from '../hooks/useFingerprint';
 import { searchIcon } from '../assets/icons';
 import Navbar from '../components/ui/Navbar';
 
@@ -10,6 +11,18 @@ export default function ClientsPage() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { darkMode } = useTheme();
+
+  const {
+    isScanning,
+    error: fpError,
+    scanStep,
+    captureOne,
+    finishRegistration,
+    resetRegistration,
+    imageBase64,
+    capturedTemplates,
+  } = useFingerprint();
+
   const [loggingOut, setLoggingOut] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [search, setSearch] = useState('');
@@ -17,6 +30,34 @@ export default function ClientsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [enrollingClient, setEnrollingClient] = useState<Client | null>(null);
+  const [fpSaved, setFpSaved] = useState(false);
+  const [fpApiError, setFpApiError] = useState('');
+
+  const handleOpenFpEnroll = (client: Client) => {
+    setEnrollingClient(client);
+    setFpSaved(false);
+    setFpApiError('');
+    resetRegistration();
+  };
+
+  const handleFpCaptureStep = async () => {
+    const template = await captureOne();
+    if (!template) return;
+
+    const newTemplates = [...capturedTemplates, template];
+    if (newTemplates.length >= 3) {
+      const merged = await finishRegistration(newTemplates);
+      if (!merged || !enrollingClient) return;
+
+      try {
+        await userApi.saveClientFingerprint(enrollingClient.id, merged);
+        setFpSaved(true);
+      } catch (err: unknown) {
+        setFpApiError(err instanceof Error ? err.message : 'Error al guardar la huella.');
+      }
+    }
+  };
   const [editForm, setEditForm] = useState({
     first_name: '',
     middle_name: '',
@@ -184,9 +225,15 @@ export default function ClientsPage() {
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => openEdit(client)}
-                      className={`text-[10px] px-3 py-1 rounded-lg border tracking-wide transition-colors ${dark ? 'border-white/10 text-white/40 hover:border-red-900/50 hover:text-red-400 hover:bg-red-950/10' : 'border-black/10 text-black/40 hover:border-red-300 hover:text-red-600'}`}
+                      className={`text-[10px] px-3 py-1 rounded-lg border tracking-wide transition-colors cursor-pointer ${dark ? 'border-white/10 text-white/40 hover:border-red-900/50 hover:text-red-400 hover:bg-red-950/10' : 'border-black/10 text-black/40 hover:border-red-300 hover:text-red-600'}`}
                     >
                       Editar
+                    </button>
+                    <button
+                      onClick={() => handleOpenFpEnroll(client)}
+                      className={`text-[10px] px-3 py-1 rounded-lg border tracking-wide transition-colors cursor-pointer ${dark ? 'border-white/10 text-white/40 hover:border-red-900/50 hover:text-red-400 hover:bg-red-950/10' : 'border-black/10 text-black/40 hover:border-red-300 hover:text-red-600'}`}
+                    >
+                      Huella
                     </button>
                   </div>
                 </div>
@@ -286,6 +333,159 @@ export default function ClientsPage() {
                 {editLoading ? 'Guardando...' : 'Guardar →'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Huella */}
+      {enrollingClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !isScanning && setEnrollingClient(null)} />
+          <div className={`relative z-10 rounded-2xl p-8 w-full max-w-md shadow-2xl flex flex-col items-center gap-6 border transition-colors ${dark ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-white border-black/10'}`}>
+            
+            <div className="flex items-center justify-between w-full">
+              <h2 className={`font-bold tracking-wide ${dark ? 'text-white' : 'text-black'}`}>Registrar Huella</h2>
+              <button 
+                disabled={isScanning}
+                onClick={() => setEnrollingClient(null)} 
+                className={`text-xs cursor-pointer disabled:opacity-40 ${dark ? 'text-white/30 hover:text-white/60' : 'text-black/30 hover:text-black/60'}`}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={`w-full h-px ${dark ? 'bg-red-900/30' : 'bg-red-200'}`} />
+
+            {fpSaved ? (
+              <div className="flex flex-col items-center gap-4 py-4 w-full">
+                <div className="w-16 h-16 rounded-full border border-red-900/40 flex items-center justify-center drop-shadow-[0_0_15px_rgba(180,0,0,0.3)]">
+                  <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h1 className={`text-xl font-bold tracking-wide ${dark ? 'text-white' : 'text-black'}`}>¡Huella guardada!</h1>
+                <p className={`text-xs text-center tracking-wider ${dark ? 'text-white/30' : 'text-black/45'}`}>
+                  La huella de {enrollingClient.first_name} {enrollingClient.paternal_last_name} fue guardada correctamente.
+                </p>
+                <button
+                  onClick={() => setEnrollingClient(null)}
+                  className="w-full bg-[#cc0000] hover:bg-red-700 text-white font-semibold py-2.5 rounded-lg transition-colors tracking-widest text-sm uppercase shadow-lg shadow-red-950/30 cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Icono huella */}
+                <div className={`w-20 h-20 rounded-full border flex items-center justify-center transition-all duration-300 ${
+                  isScanning
+                    ? 'border-red-500/60 drop-shadow-[0_0_20px_rgba(200,0,0,0.4)] animate-pulse'
+                    : dark ? 'border-[#2a2a2a]' : 'border-black/15'
+                }`}>
+                  <svg className={`w-10 h-10 ${dark ? 'text-white/60' : 'text-black/60'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2}
+                      d="M12 11c0-1.657-1.343-3-3-3S6 9.343 6 11c0 3.866 2.686 7 6 7s6-3.134 6-7c0-3.314-2.686-6-6-6-1.86 0-3.527.848-4.647 2.183" />
+                  </svg>
+                </div>
+
+                <div className="flex flex-col items-center gap-1">
+                  <p className={`text-xs text-center tracking-wider ${dark ? 'text-white/30' : 'text-black/45'}`}>
+                    Se necesitan 3 capturas del mismo dedo para el cliente:
+                  </p>
+                  <p className={`text-sm font-semibold ${dark ? 'text-white' : 'text-black'}`}>
+                    {enrollingClient.first_name} {enrollingClient.paternal_last_name}
+                  </p>
+                </div>
+
+                {/* Debug Visual de Huella */}
+                {imageBase64 ? (
+                  <div className={`w-28 h-36 border rounded-xl p-1.5 flex items-center justify-center shadow-lg overflow-hidden ${dark ? 'border-red-900/30 bg-black/60 shadow-red-950/20 filter invert' : 'border-red-200 bg-gray-50 shadow-black/5'}`}>
+                    <img
+                      src={`data:image/png;base64,${imageBase64}`}
+                      alt="Huella capturada"
+                      className="w-full h-full object-contain rounded-lg"
+                    />
+                  </div>
+                ) : (
+                  <div className={`w-28 h-36 border rounded-xl flex items-center justify-center ${dark ? 'border-[#2a2a2a] bg-black/20' : 'border-black/10 bg-gray-50'}`}>
+                    <span className={`text-[10px] uppercase tracking-widest text-center px-4 ${dark ? 'text-white/20' : 'text-black/40'}`}>
+                      Esperando captura...
+                    </span>
+                  </div>
+                )}
+
+                {/* Indicador de progreso */}
+                <div className="flex gap-3 items-center">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className={`w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                      scanStep >= i
+                        ? 'border-red-500 bg-red-950/40 text-red-400'
+                        : dark
+                          ? 'border-[#2a2a2a] text-white/20'
+                          : 'border-black/10 text-black/30'
+                    }`}>
+                      {scanStep > i ? '✓' : i}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Estado del escaneo */}
+                <p className={`text-sm text-center min-h-[20px] ${dark ? 'text-white/50' : 'text-black/60'}`}>
+                  {isScanning
+                    ? 'Capturando... mantén el dedo firme en el lector'
+                    : scanStep === 0
+                      ? 'Pon el dedo en el lector y presiona el botón'
+                      : scanStep < 3
+                        ? 'Levanta el dedo, vuelve a ponerlo y presiona de nuevo'
+                        : 'Guardando huella...'}
+                </p>
+
+                {fpError && (
+                  <div className="flex flex-col gap-2 w-full">
+                    <p className="text-red-500 text-xs text-center bg-red-950/20 border border-red-900/30 rounded-lg px-3 py-2">
+                      {fpError}
+                    </p>
+                    {scanStep > 0 && (
+                      <button
+                        onClick={resetRegistration}
+                        className={`text-xs transition-colors cursor-pointer ${dark ? 'text-white/40 hover:text-white/60' : 'text-black/50 hover:text-black/70'}`}
+                      >
+                        Empezar de nuevo
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {fpApiError && (
+                  <p className="text-red-500 text-xs text-center bg-red-950/20 border border-red-900/30 rounded-lg px-3 py-2 w-full">
+                    {fpApiError}
+                  </p>
+                )}
+
+                <div className="flex flex-col gap-3 w-full">
+                  <button
+                    onClick={handleFpCaptureStep}
+                    disabled={isScanning || scanStep >= 3}
+                    className="w-full bg-[#cc0000] hover:bg-red-700 disabled:opacity-40 text-white font-semibold py-2.5 rounded-lg transition-colors tracking-widest text-sm uppercase shadow-lg shadow-red-950/30 cursor-pointer"
+                  >
+                    {isScanning
+                      ? 'Capturando...'
+                      : scanStep >= 3
+                        ? 'Procesando...'
+                        : `Capturar (${scanStep + 1} de 3) →`}
+                  </button>
+
+                  <button
+                    onClick={() => setEnrollingClient(null)}
+                    disabled={isScanning}
+                    className={`w-full text-xs transition-colors tracking-wider py-1 cursor-pointer ${dark ? 'text-white/25 hover:text-white/50' : 'text-black/45 hover:text-black/75'}`}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </>
+            )}
+
           </div>
         </div>
       )}

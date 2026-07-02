@@ -37,7 +37,7 @@ export default function KiosScreen() {
         setTimeout(() => {
           setKioskState('idle')
           setCurrentClient(null)
-        }, 4000)
+        }, 10000)
       }, 800)
     })
 

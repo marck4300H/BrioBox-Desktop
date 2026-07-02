@@ -185,42 +185,15 @@ export default function RegisterProductPage() {
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-black/80 to-transparent pointer-events-none" />
         <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tl from-black/80 to-transparent pointer-events-none" />
 
-        <header className={`relative z-10 flex items-center justify-between px-8 py-4 border-b transition-colors duration-500 ${dark ? 'border-white/5' : 'border-black/10'}`}>
-          <div>
-            <p className={`text-[10px] tracking-widest uppercase mb-0.5 ${dark ? 'text-white/30' : 'text-black/40'}`}>
-              Inventario
-            </p>
-            <h1 className={`text-2xl font-bold tracking-wide ${dark ? 'text-white' : 'text-[#111]'}`}>
-              Registrar producto
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={toggleTheme}
-              className={`w-12 h-6 rounded-full relative transition-all duration-300 ${dark ? 'bg-red-900/60' : 'bg-black/20'}`}
-            >
-              <div className={`absolute top-1 w-4 h-4 rounded-full transition-all duration-300 flex items-center justify-center text-[8px] ${dark ? 'left-7 bg-red-500' : 'left-1 bg-white'}`}>
-                {dark ? '🌙' : '☀️'}
-              </div>
-            </button>
-
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm border transition-colors cursor-pointer ${dark ? 'border-white/10 text-white/50 hover:border-red-900/50 hover:text-red-400' : 'border-black/10 text-black/50'}`}>
-              🔔
-            </div>
-
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${dark ? 'border-white/5 bg-white/5 hover:border-red-900/30' : 'border-black/10 bg-black/5'}`}>
-              <img
-                src="/user.png"
-                alt="user"
-                className="w-6 h-6 rounded-full object-cover"
-              />
-              <span className={`text-xs tracking-wide ${dark ? 'text-white/60' : 'text-black/60'}`}>
-                {user?.name ?? 'Admin'} {user?.lastName ?? ''}
-              </span>
-            </div>
-          </div>
-        </header>
+        {/* Page header */}
+        <div className="relative z-10 px-8 pt-8 pb-4">
+          <p className={`text-[10px] tracking-widest uppercase mb-0.5 ${dark ? 'text-white/30' : 'text-black/40'}`}>
+            Inventario
+          </p>
+          <h1 className={`text-2xl font-bold tracking-wide ${dark ? 'text-white' : 'text-[#111]'}`}>
+            Registrar producto
+          </h1>
+        </div>
 
         <div className="relative z-10 flex-1 flex items-center justify-center p-8">
           <div className="w-full max-w-xl flex flex-col gap-4">
